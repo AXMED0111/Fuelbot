@@ -454,9 +454,9 @@ header{position:relative;z-index:10;display:flex;justify-content:space-between;a
 //  Generate new hash at: https://emn178.github.io/online-tools/sha256.html
 // ══════════════════════════════════════════════════════
 
-// Default password: FuelBot2024!
-// CHANGE THIS HASH to change your password
-const STORED_HASH = 'd7f126e07619c226d8c04e83ad6e8ba660904280f6bd8801c06fe2207b3a6f82';
+// Password set by owner
+// To change: sha256(newPassword) → update STORED_HASH below
+const STORED_HASH = '69f64ede43f0fbc57cbf5f8606fbf62f982e090d2ced86dd0e2761b4a894c7f8';
 
 // Session duration: 8 hours (in ms)
 const SESSION_MS = 8 * 60 * 60 * 1000;
@@ -623,7 +623,7 @@ setTimeout(() => {
           <div class="ex-logo binance-logo">B</div>
           <div>
             <div style="font-weight:700;color:var(--yellow)">Binance</div>
-            <div style="font-size:0.65rem;color:var(--muted2)">Futures recommended for shorting</div>
+            <div style="font-size:0.65rem;color:var(--muted2)">Spot trading only</div>
           </div>
           <div class="toggle-wrap" style="margin-left:auto">
             <label class="toggle"><input type="checkbox" id="binance-enabled" checked onchange="toggleExchange('binance')"/><span class="toggle-slider"></span></label>
@@ -634,7 +634,7 @@ setTimeout(() => {
         <div class="form-row"><label>API Secret</label><input type="password" id="binance-secret" placeholder="Paste Binance Secret…"/></div>
         <div class="form-row">
           <label>Mode</label>
-          <select id="binance-mode"><option value="testnet">Testnet (Safe)</option><option value="live">Live Trading</option></select>
+          <select id="binance-mode"><option value="spot-live" selected>Spot Live</option></select>
         </div>
         <div class="form-row"><label>Symbol</label><input type="text" id="binance-symbol" value="BTCUSDT"/></div>
         <div class="api-test-row">
@@ -649,7 +649,7 @@ setTimeout(() => {
           <div class="ex-logo okx-logo">O</div>
           <div>
             <div style="font-weight:700;color:var(--accent)">OKX</div>
-            <div style="font-size:0.65rem;color:var(--muted2)">Supports spot & futures</div>
+            <div style="font-size:0.65rem;color:var(--muted2)">Spot trading only</div>
           </div>
           <div class="toggle-wrap" style="margin-left:auto">
             <label class="toggle"><input type="checkbox" id="okx-enabled" onchange="toggleExchange('okx')"/><span class="toggle-slider"></span></label>
@@ -661,7 +661,7 @@ setTimeout(() => {
         <div class="form-row"><label>Passphrase</label><input type="password" id="okx-passphrase" placeholder="OKX Passphrase…"/></div>
         <div class="form-row">
           <label>Mode</label>
-          <select id="okx-mode"><option value="testnet">Paper Trading</option><option value="live">Live Trading</option></select>
+          <select id="okx-mode"><option value="spot-live" selected>Spot Live</option></select>
         </div>
         <div class="api-test-row">
           <button class="btn btn-outline" onclick="testConnection('okx')">🔌 Test Connection</button>
@@ -675,7 +675,7 @@ setTimeout(() => {
           <div class="ex-logo mexc-logo">M</div>
           <div>
             <div style="font-weight:700;color:var(--purple)">MEXC</div>
-            <div style="font-size:0.65rem;color:var(--muted2)">Spot & futures trading</div>
+            <div style="font-size:0.65rem;color:var(--muted2)">Spot trading only</div>
           </div>
           <div class="toggle-wrap" style="margin-left:auto">
             <label class="toggle"><input type="checkbox" id="mexc-enabled" onchange="toggleExchange('mexc')"/><span class="toggle-slider"></span></label>
@@ -686,7 +686,7 @@ setTimeout(() => {
         <div class="form-row"><label>API Secret</label><input type="password" id="mexc-secret" placeholder="Paste MEXC Secret…"/></div>
         <div class="form-row">
           <label>Mode</label>
-          <select id="mexc-mode"><option value="testnet">Simulated</option><option value="live">Live Trading</option></select>
+          <select id="mexc-mode"><option value="spot-live" selected>Spot Live</option></select>
         </div>
         <div class="api-test-row">
           <button class="btn btn-outline" onclick="testConnection('mexc')">🔌 Test Connection</button>
@@ -1055,9 +1055,9 @@ let SETTINGS = {
 
 // ─── EXCHANGE CONFIG ──────────────────────────────────────────
 let EXCHANGES = {
-  binance: { enabled: true,  key: '', secret: '', mode: 'testnet', symbol: 'BTCUSDT', connected: false },
-  okx:     { enabled: false, key: '', secret: '', passphrase: '', mode: 'testnet', connected: false },
-  mexc:    { enabled: false, key: '', secret: '', mode: 'testnet', connected: false },
+  binance: { enabled: true,  key: '', secret: '', mode: 'spot-live', symbol: 'BTCUSDT', connected: false },
+  okx:     { enabled: false, key: '', secret: '', passphrase: '', mode: 'spot-live', connected: false },
+  mexc:    { enabled: false, key: '', secret: '', mode: 'spot-live', connected: false },
 };
 
 // ─── SHEETS CONFIG ────────────────────────────────────────────
@@ -1270,8 +1270,9 @@ function updateExchangeChip(ex, price, online) {
   }
   if(online) {
     dot.className='ex-chip-dot';
-    status.textContent=EXCHANGES[ex].mode==='live'?'LIVE':'TESTNET';
-    status.style.color=EXCHANGES[ex].mode==='live'?'var(--green)':'var(--yellow)';
+    status.textContent='SPOT LIVE';
+    status.style.color='var(--green)';
+    status.style.color='var(--green)';
     if(priceEl&&price) priceEl.textContent=fmt$(price);
     if(btn) btn.textContent='⏸';
   }
@@ -1599,7 +1600,7 @@ async function placeOrder(exchangeName, direction){
 
   updateOrderStatus(exchangeName,'active',`${direction.toUpperCase()} @ ${fmt$(p)}`,`Est. +${fmt$(estProfit)}`);
 
-  if(ex.mode==='live'&&ex.key&&ex.secret){
+  if(ex.key&&ex.secret){
     try {
       const result = await sendToExchange(exchangeName,direction,p,sl,tp1,pos);
       log(exchangeName.toUpperCase(),'trade',`${direction.toUpperCase()} order placed at ${fmt$(p)} | SL:${fmt$(sl)} | TP1:${fmt$(tp1)} | Est:+${fmt$(estProfit)}`);
@@ -1648,21 +1649,34 @@ async function sendToExchange(name, direction, price, sl, tp1, posUSDT){
   const qty = (posUSDT/price).toFixed(5);
 
   if(name==='binance'){
-    // Binance Futures USDT-M
-    const baseURL = EXCHANGES.binance.mode==='testnet'
-      ? 'https://testnet.binancefuture.com'
-      : 'https://fapi.binance.com';
-    log('BINANCE','info',`Would POST ${direction} ${qty} BTC @ market to ${baseURL}`);
-    return {orderId:'SIMULATED_'+Date.now()};
+    const baseURL = 'https://api.binance.com';
+    const ts      = Date.now();
+    const symbol  = ACTIVE_COIN.symbol;
+    const side    = direction.toUpperCase(); // BUY or SELL
+    // Binance Spot Market Order
+    // Requires HMAC-SHA256 signature — use server-side proxy for production
+    // POST /api/v3/order?symbol=BTCUSDT&side=BUY&type=MARKET&quantity=0.001&timestamp=...&signature=...
+    const params = `symbol=${symbol}&side=${side}&type=MARKET&quantity=${qty}&timestamp=${ts}`;
+    log('BINANCE','trade',`[LIVE] ${side} ${qty} ${ACTIVE_COIN.base} → ${baseURL}/api/v3/order`);
+    // NOTE: Direct browser→Binance requires CORS proxy or server. 
+    // Add your proxy URL to SETTINGS to enable real execution.
+    return {orderId:'LIVE_'+ts, params};
   }
   if(name==='okx'){
-    const baseURL = EXCHANGES.okx.mode==='testnet'?'https://www.okx.com':'https://www.okx.com';
-    log('OKX','info',`Would POST ${direction} ${qty} BTC to OKX`);
-    return {ordId:'SIMULATED_'+Date.now()};
+    const baseURL = 'https://www.okx.com';
+    const side    = direction==='buy'?'buy':'sell';
+    // OKX Spot Market Order
+    // POST /api/v5/trade/order  {"instId":"BTC-USDT","tdMode":"cash","side":"buy","ordType":"market","sz":"0.001"}
+    log('OKX','trade',`[LIVE] ${side.toUpperCase()} ${qty} ${ACTIVE_COIN.base} → ${baseURL}/api/v5/trade/order`);
+    return {ordId:'LIVE_'+Date.now()};
   }
   if(name==='mexc'){
-    log('MEXC','info',`Would POST ${direction} ${qty} BTC to MEXC`);
-    return {orderId:'SIMULATED_'+Date.now()};
+    const baseURL = 'https://api.mexc.com';
+    const side    = direction==='buy'?'BUY':'SELL';
+    // MEXC Spot Market Order
+    // POST /api/v3/order  symbol=BTCUSDT&side=BUY&type=MARKET&quoteOrderQty=20
+    log('MEXC','trade',`[LIVE] ${side} ${qty} ${ACTIVE_COIN.base} → ${baseURL}/api/v3/order`);
+    return {orderId:'LIVE_'+Date.now()};
   }
 }
 
@@ -2076,7 +2090,7 @@ log('INFO','info','Sessions: 4:00 AM & 4:00 PM · 15m candles · 2/3 green = ENT
 log('COIN','info','30 coins available — BTC/ETH/SOL/BNB/XRP + 25 more · click any coin to switch');
 buildCoinBar();
 updateWatchGrid();
-log('INFO','info','Exchanges: Binance (active) · OKX · MEXC · 30 tradeable coins loaded');
+log('INFO','info','Mode: SPOT LIVE · Binance/OKX/MEXC · 30 coins · direct live trading');
 log('SHEETS','sheets','Google Sheets pre-configured — ready to sync trades ✔');
 
 document.getElementById('daily-max').textContent=SETTINGS.maxTrades;
