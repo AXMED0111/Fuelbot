@@ -665,6 +665,25 @@ header{position:relative;z-index:10;display:flex;justify-content:space-between;a
   <meta name="mobile-web-app-capable" content="yes"/>
   <meta name="theme-color" content="#04080d"/>
   <meta name="application-name" content="FuelBot PRO"/>
+<style>
+#app-grid{display:grid;grid-template-columns:270px 1fr 230px;gap:10px;padding:12px 16px;}
+.score-ring-wrap{position:relative;display:flex;flex-direction:column;align-items:center;padding:4px 0 8px;}
+.filter-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+.filter-dot.pass{background:var(--green);box-shadow:0 0 6px var(--green);}
+.filter-dot.fail{background:var(--red);box-shadow:0 0 6px var(--red);}
+.filter-dot.warn{background:var(--yellow);box-shadow:0 0 6px var(--yellow);}
+.filter-item{display:flex;align-items:center;gap:7px;font-size:0.65rem;padding:3px 0;}
+.filter-lbl{flex:1;color:var(--muted2);}
+.filter-val{font-family:var(--mono);font-size:0.6rem;color:var(--text);}
+.sess-box{transition:all 0.3s;}
+.sess-box.active{border-color:var(--accent)!important;background:rgba(0,200,255,0.08)!important;}
+.sess-box.active div{color:var(--accent)!important;}
+.target-row{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:5px;border:1px solid var(--border2);margin-bottom:4px;cursor:pointer;transition:all 0.2s;}
+.hit-green{border-color:var(--green2);background:rgba(0,255,136,0.04);}
+.hit-red{border-color:var(--border2);opacity:0.85;}
+@media(max-width:1100px){#app-grid{grid-template-columns:1fr 1fr !important;}}
+@media(max-width:768px){#app-grid{grid-template-columns:1fr !important;}}
+</style>
 </head>
 <body>
 
@@ -1185,12 +1204,285 @@ setTimeout(() => {
   </div>
 </div>
 
+<!-- ══ DASHBOARD PANEL ══ -->
+<div id="dashboard-panel">
+
+  <!-- COIN SELECTOR BAR -->
+  <div class="coin-bar" id="coin-bar" style="display:flex;align-items:center;gap:6px;padding:6px 16px;background:var(--bg2);border-bottom:1px solid var(--border);overflow-x:auto;position:relative;z-index:7;">
+    <input id="coin-search" placeholder="🔍 Search…" oninput="searchCoin(this.value)"
+      style="background:var(--bg3);border:1px solid var(--border2);border-radius:3px;padding:3px 8px;color:var(--text);font-family:var(--mono);font-size:0.68rem;outline:none;width:90px;flex-shrink:0;"/>
+    <button class="btn btn-outline btn-sm" onclick="addCustomCoin()" style="white-space:nowrap;flex-shrink:0;">+ Custom</button>
+  </div>
+
+  <!-- MAIN APP GRID -->
+  <div style="display:grid;grid-template-columns:280px 1fr 230px;gap:10px;padding:12px 16px;max-width:1500px;margin:0 auto;" id="app-grid">
+
+    <!-- LEFT COLUMN -->
+    <div style="display:flex;flex-direction:column;gap:10px;">
+
+      <!-- Signal Box -->
+      <div class="panel signal-main" id="sig-box">
+        <div id="sig-icon" style="font-size:2.2rem;margin-bottom:4px;">⏳</div>
+        <div id="sig-word" style="font-size:1.4rem;font-weight:800;letter-spacing:0.12em;color:var(--muted2);">SCANNING</div>
+        <div id="sig-sub" style="font-size:0.6rem;color:var(--muted2);margin-top:4px;letter-spacing:0.08em;">Awaiting data…</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;">
+          <div id="trend-arrow" style="font-size:1.2rem;">—</div>
+          <div style="font-size:0.58rem;color:var(--muted2);" id="gc-txt">—</div>
+          <div style="font-size:0.58rem;font-weight:700;font-family:var(--mono);" id="cverd">—</div>
+        </div>
+      </div>
+
+      <!-- Score Ring -->
+      <div class="panel">
+        <div class="panel-hdr">🎯 SIGNAL SCORE</div>
+        <div class="score-ring-wrap">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="34" fill="none" stroke="var(--border2)" stroke-width="7"/>
+            <circle id="score-arc" cx="40" cy="40" r="34" fill="none" stroke="var(--accent)" stroke-width="7"
+              stroke-dasharray="0 213.6" stroke-linecap="round" transform="rotate(-90 40 40)" style="transition:all 0.6s;"/>
+          </svg>
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
+            <div id="score-num" style="font-size:1.2rem;font-weight:800;font-family:var(--mono);color:var(--accent);">0</div>
+            <div style="font-size:0.4rem;color:var(--muted2);letter-spacing:0.1em;">/10</div>
+          </div>
+        </div>
+        <div id="score-label" style="font-size:0.58rem;text-align:center;color:var(--muted2);letter-spacing:0.1em;">CALCULATING…</div>
+      </div>
+
+      <!-- Filters -->
+      <div class="panel">
+        <div class="panel-hdr">🔬 FILTER STATUS</div>
+        <div class="filter-list" id="filter-list">
+          <div class="filter-item"><span class="filter-dot" id="f-session-dot"></span><span class="filter-lbl">Session Window</span><span class="filter-val" id="f-session-val">—</span></div>
+          <div class="filter-item"><span class="filter-dot" id="f-candles-dot"></span><span class="filter-lbl">2/3 Green</span><span class="filter-val" id="f-candles-val">—</span></div>
+          <div class="filter-item"><span class="filter-dot" id="f-bor-dot"></span><span class="filter-lbl">BOR Breakout</span><span class="filter-val" id="f-bor-val">—</span></div>
+          <div class="filter-item"><span class="filter-dot" id="f-mom-dot"></span><span class="filter-lbl">Momentum</span><span class="filter-val" id="f-mom-val">—</span></div>
+          <div class="filter-item"><span class="filter-dot" id="f-trend-dot"></span><span class="filter-lbl">Trend</span><span class="filter-val" id="f-trend-val">—</span></div>
+          <div class="filter-item"><span class="filter-dot" id="f-body-dot"></span><span class="filter-lbl">Candle Body</span><span class="filter-val" id="f-body-val">—</span></div>
+          <div class="filter-item"><span class="filter-dot" id="f-news-dot"></span><span class="filter-lbl">News Filter</span><span class="filter-val" id="f-news-val">—</span></div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <button class="btn btn-sm" onclick="setNews(true)" id="btn-news-on" style="flex:1;font-size:0.6rem;background:rgba(255,45,85,0.1);border:1px solid var(--red2);color:var(--red);">📰 News ON</button>
+          <button class="btn btn-sm" onclick="setNews(false)" id="btn-news-off" style="flex:1;font-size:0.6rem;">✓ Clear</button>
+        </div>
+      </div>
+
+      <!-- Session Boxes -->
+      <div class="panel">
+        <div class="panel-hdr">⏰ SESSIONS (GMT+3)</div>
+        <div style="display:flex;gap:6px;margin-bottom:8px;">
+          <div class="sess-box" id="s4am" style="flex:1;text-align:center;padding:8px;border-radius:4px;border:1px solid var(--border2);background:var(--bg3);">
+            <div style="font-size:0.55rem;color:var(--muted2);">PEAK</div>
+            <div style="font-weight:700;color:var(--accent);font-family:var(--mono);">4:00 AM</div>
+            <div style="font-size:0.5rem;color:var(--muted2);">⭐ FAVOURITE</div>
+          </div>
+          <div class="sess-box" id="s4pm" style="flex:1;text-align:center;padding:8px;border-radius:4px;border:1px solid var(--border2);background:var(--bg3);">
+            <div style="font-size:0.55rem;color:var(--muted2);">PEAK</div>
+            <div style="font-weight:700;color:var(--accent);font-family:var(--mono);">4:00 PM</div>
+            <div style="font-size:0.5rem;color:var(--muted2);">⭐ FAVOURITE</div>
+          </div>
+        </div>
+        <div id="countdown" style="text-align:center;font-family:var(--mono);font-size:0.7rem;color:var(--yellow);padding:4px;"></div>
+        <div style="font-size:0.55rem;color:var(--muted2);text-align:center;margin-top:4px;">Trade anytime · Peak sessions get +2 bonus score</div>
+      </div>
+    </div>
+
+    <!-- CENTRE COLUMN -->
+    <div style="display:flex;flex-direction:column;gap:10px;">
+
+      <!-- Price + Chart -->
+      <div class="panel" style="padding:10px 14px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap;">
+          <div>
+            <div id="tc-price" style="font-size:1.8rem;font-weight:800;font-family:var(--mono);color:var(--accent);">—</div>
+            <div id="tc-price-lbl" style="font-size:0.6rem;color:var(--muted2);">BTC/USDT · Binance</div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <div style="text-align:center;"><div id="tc-sess" style="font-size:0.75rem;font-family:var(--mono);color:var(--yellow);">—</div><div style="font-size:0.42rem;color:var(--muted2);">SESSION</div></div>
+            <div style="text-align:center;"><div id="tc-entry" style="font-size:0.75rem;font-family:var(--mono);">—</div><div style="font-size:0.42rem;color:var(--muted2);">ENTRY</div></div>
+            <div style="text-align:center;"><div id="tc-sl" style="font-size:0.75rem;font-family:var(--mono);color:var(--red);">—</div><div style="font-size:0.42rem;color:var(--muted2);">STOP</div></div>
+            <div style="text-align:center;"><div id="tc-tp1" style="font-size:0.75rem;font-family:var(--mono);color:var(--green);">—</div><div style="font-size:0.42rem;color:var(--muted2);">TP1</div></div>
+            <div style="text-align:center;"><div id="tc-tp2" style="font-size:0.75rem;font-family:var(--mono);color:var(--green);">—</div><div style="font-size:0.42rem;color:var(--muted2);">TP2</div></div>
+            <div style="text-align:center;"><div id="tc-mom" style="font-size:0.75rem;font-family:var(--mono);color:var(--purple);">—</div><div style="font-size:0.42rem;color:var(--muted2);">MOMENTUM</div></div>
+            <div style="text-align:center;"><div id="tc-5m" style="font-size:0.75rem;font-family:var(--mono);">—</div><div style="font-size:0.42rem;color:var(--muted2);">5M CANDLE</div></div>
+          </div>
+        </div>
+        <canvas id="mini-chart" width="560" height="90" style="width:100%;height:90px;border-radius:3px;"></canvas>
+        <div class="candles-wrap" id="candles-wrap" style="display:flex;gap:2px;margin-top:6px;height:40px;align-items:flex-end;overflow:hidden;"></div>
+      </div>
+
+      <!-- BOR Panel -->
+      <div class="panel">
+        <div class="panel-hdr">📐 BOR — BREAK OF RANGE (Mantas BOR V2)</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px;">
+          <div style="text-align:center;padding:6px;background:var(--bg3);border-radius:4px;border:1px solid var(--border2);">
+            <div style="font-size:0.45rem;color:var(--muted2);letter-spacing:0.1em;">BOR HIGH</div>
+            <div id="bor-high" style="font-family:var(--mono);font-size:0.75rem;color:var(--red);">—</div>
+            <div id="bor-high-dist" style="font-size:0.5rem;color:var(--muted2);">—</div>
+          </div>
+          <div style="text-align:center;padding:6px;background:var(--bg3);border-radius:4px;border:1px solid var(--border2);">
+            <div style="font-size:0.45rem;color:var(--muted2);letter-spacing:0.1em;">BOR MID</div>
+            <div id="bor-mid" style="font-family:var(--mono);font-size:0.75rem;color:var(--yellow);">—</div>
+            <div id="bor-mid-dist" style="font-size:0.5rem;color:var(--muted2);">—</div>
+          </div>
+          <div style="text-align:center;padding:6px;background:var(--bg3);border-radius:4px;border:1px solid var(--border2);">
+            <div style="font-size:0.45rem;color:var(--muted2);letter-spacing:0.1em;">BOR LOW</div>
+            <div id="bor-low" style="font-family:var(--mono);font-size:0.75rem;color:var(--green);">—</div>
+            <div id="bor-low-dist" style="font-size:0.5rem;color:var(--muted2);">—</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;">
+          <div style="padding:6px;background:var(--bg3);border-radius:4px;font-size:0.62rem;">
+            <span style="color:var(--muted2);">Zone: </span><span id="bor-zone" style="color:var(--text);">—</span>
+          </div>
+          <div style="padding:6px;background:var(--bg3);border-radius:4px;font-size:0.62rem;">
+            <span style="color:var(--muted2);">Width: </span><span id="bor-width" style="color:var(--text);">—</span>
+          </div>
+          <div style="padding:6px;background:var(--bg3);border-radius:4px;font-size:0.62rem;">
+            <span style="color:var(--muted2);">vs Mid: </span><span id="bor-vs-mid" style="color:var(--text);">—</span>
+          </div>
+          <div style="padding:6px;background:var(--bg3);border-radius:4px;font-size:0.62rem;">
+            <span style="color:var(--muted2);">Breakout: </span><span id="bor-breakout" style="color:var(--yellow);">—</span>
+          </div>
+        </div>
+        <div style="margin-top:8px;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;position:relative;">
+          <div id="bor-price-line" style="position:absolute;top:0;bottom:0;width:3px;background:var(--accent);border-radius:2px;left:50%;transition:left 0.5s;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:3px;">
+          <span id="bor-proj1" style="font-size:0.5rem;color:var(--muted2);">Proj: —</span>
+          <span id="kv-bor" style="font-size:0.5rem;color:var(--muted2);">BOR Status: —</span>
+        </div>
+      </div>
+
+      <!-- Trade Execution -->
+      <div class="panel">
+        <div class="panel-hdr" style="justify-content:space-between;">
+          <span>⚡ EXECUTE TRADE</span>
+          <span style="font-size:0.55rem;color:var(--muted2);">
+            Daily: <span id="daily-count">0</span>/<span id="daily-max">3</span>
+          </span>
+        </div>
+        <div id="exec-row" style="display:flex;gap:6px;margin-bottom:10px;">
+          <button class="btn btn-primary" onclick="executeTrade('BUY')" style="flex:1;background:rgba(0,255,136,0.12);border:1px solid var(--green2);color:var(--green);font-weight:700;">▲ BUY LONG</button>
+          <button class="btn btn-primary" onclick="executeTrade('SELL')" style="flex:1;background:rgba(255,45,85,0.12);border:1px solid var(--red2);color:var(--red);font-weight:700;">▼ SELL SHORT</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:0.6rem;margin-bottom:8px;">
+          <div style="padding:5px 8px;background:var(--bg3);border-radius:3px;"><span style="color:var(--muted2);">Direction: </span><span id="kv-dir" style="font-weight:700;">—</span></div>
+          <div style="padding:5px 8px;background:var(--bg3);border-radius:3px;"><span style="color:var(--muted2);">Entry: </span><span id="kv-entry" style="font-family:var(--mono);">—</span></div>
+          <div style="padding:5px 8px;background:var(--bg3);border-radius:3px;"><span style="color:var(--muted2);">Stop: </span><span id="kv-sl" style="color:var(--red);font-family:var(--mono);">—</span></div>
+          <div style="padding:5px 8px;background:var(--bg3);border-radius:3px;"><span style="color:var(--muted2);">SL Dist: </span><span id="kv-sl-dist" style="font-family:var(--mono);">—</span></div>
+          <div style="padding:5px 8px;background:var(--bg3);border-radius:3px;"><span style="color:var(--muted2);">TP1: </span><span id="kv-tp1" style="color:var(--green);font-family:var(--mono);">—</span></div>
+          <div style="padding:5px 8px;background:var(--bg3);border-radius:3px;"><span style="color:var(--muted2);">TP1 R: </span><span id="kv-tp1-r" style="font-family:var(--mono);">—</span></div>
+          <div style="padding:5px 8px;background:var(--bg3);border-radius:3px;"><span style="color:var(--muted2);">TP2: </span><span id="kv-tp2" style="color:var(--green);font-family:var(--mono);">—</span></div>
+          <div style="padding:5px 8px;background:var(--bg3);border-radius:3px;"><span style="color:var(--muted2);">TP2 R: </span><span id="kv-tp2-r" style="font-family:var(--mono);">—</span></div>
+          <div style="padding:5px 8px;background:var(--bg3);border-radius:3px;"><span style="color:var(--muted2);">Risk %: </span><span id="kv-risk" style="color:var(--yellow);font-family:var(--mono);">1.5%</span></div>
+        </div>
+        <div id="conf-fill" style="display:none;padding:8px;background:rgba(0,200,255,0.07);border:1px solid var(--accent);border-radius:4px;font-size:0.62rem;text-align:center;">
+          <span id="conf-num" style="font-family:var(--mono);"></span>
+        </div>
+      </div>
+
+      <!-- Position Size -->
+      <div class="panel">
+        <div class="panel-hdr">💰 POSITION SIZING</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:0.62rem;">
+          <div style="padding:5px 8px;background:var(--bg3);border-radius:3px;"><span style="color:var(--muted2);">Balance: </span><span id="pr-balance" style="font-family:var(--mono);">—</span></div>
+          <div style="padding:5px 8px;background:var(--bg3);border-radius:3px;"><span style="color:var(--muted2);">Size USDT: </span><span id="pr-size" style="font-family:var(--mono);color:var(--accent);">—</span></div>
+          <div style="padding:5px 8px;background:var(--bg3);border-radius:3px;"><span style="color:var(--muted2);">TP1 Est: </span><span id="pr-tp1" style="font-family:var(--mono);color:var(--green);">—</span></div>
+          <div style="padding:5px 8px;background:var(--bg3);border-radius:3px;"><span style="color:var(--muted2);">TP2 Est: </span><span id="pr-tp2" style="font-family:var(--mono);color:var(--green);">—</span></div>
+          <div style="padding:5px 8px;background:var(--bg3);border-radius:3px;"><span style="color:var(--muted2);">Max Loss: </span><span id="pr-loss" style="font-family:var(--mono);color:var(--red);">—</span></div>
+          <div style="padding:5px 8px;background:var(--bg3);border-radius:3px;"><span style="color:var(--muted2);">Per Exch: </span><span id="pr-per-ex" style="font-family:var(--mono);">—</span></div>
+        </div>
+        <div id="pb-gain" style="height:3px;background:var(--green2);border-radius:2px;margin-top:6px;width:0%;transition:width 0.6s;"></div>
+        <div id="pb-loss" style="height:3px;background:var(--red2);border-radius:2px;margin-top:2px;width:0%;transition:width 0.6s;"></div>
+      </div>
+
+      <!-- Order Status -->
+      <div class="panel">
+        <div class="panel-hdr">📋 ORDERS</div>
+        <div id="exec-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:6px;font-size:0.6rem;">
+          <div id="ord-binance" style="padding:4px 6px;background:var(--bg3);border-radius:3px;border:1px solid var(--border2);">
+            <div style="color:var(--muted2);font-size:0.5rem;">BINANCE</div>
+            <div id="os-binance" style="font-family:var(--mono);">IDLE</div>
+          </div>
+          <div id="ord-okx" style="padding:4px 6px;background:var(--bg3);border-radius:3px;border:1px solid var(--border2);">
+            <div style="color:var(--muted2);font-size:0.5rem;">OKX</div>
+            <div id="os-okx" style="font-family:var(--mono);">IDLE</div>
+          </div>
+          <div id="ord-mexc" style="padding:4px 6px;background:var(--bg3);border-radius:3px;border:1px solid var(--border2);">
+            <div style="color:var(--muted2);font-size:0.5rem;">MEXC</div>
+            <div id="os-mexc" style="font-family:var(--mono);">IDLE</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trade Log -->
+      <div class="panel">
+        <div class="panel-hdr" style="justify-content:space-between;">
+          <span>📝 TRADE LOG</span>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-outline btn-sm" onclick="exportToSheets()">📊 Sheets</button>
+            <button class="btn btn-outline btn-sm" onclick="clearLog()">🗑</button>
+          </div>
+        </div>
+        <div class="trade-table-wrap">
+          <table class="trade-table">
+            <thead><tr>
+              <th>Time</th><th>Coin</th><th>Dir</th><th>Exch</th>
+              <th>Entry</th><th>SL</th><th>TP1</th><th>TP2</th>
+              <th>Risk</th><th>Size</th><th>Score</th>
+            </tr></thead>
+            <tbody id="trade-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div style="display:flex;flex-direction:column;gap:10px;">
+
+      <!-- News Warning -->
+      <div class="panel" id="news-panel">
+        <div class="panel-hdr">📰 NEWS FILTER</div>
+        <div id="news-txt" style="font-size:0.65rem;color:var(--muted2);line-height:1.5;">
+          No major news flags. Market clear for trading.
+        </div>
+      </div>
+
+      <!-- Session Quality (from signals) -->
+      <div class="panel">
+        <div class="panel-hdr" style="margin-bottom:10px;">⏰ SESSION QUALITY</div>
+        <div id="session-quality-block" style="display:flex;flex-direction:column;gap:6px;"></div>
+        <div class="panel-hdr" style="margin:14px 0 8px;">🎯 TRADE OPPORTUNITY</div>
+        <div id="opp-score-block"></div>
+      </div>
+
+      <!-- Watchlist -->
+      <div class="panel" id="watchlist-panel">
+        <div class="panel-hdr" style="justify-content:space-between;">
+          <span>👁 WATCHLIST</span>
+          <span id="wl-scan-status" style="font-size:0.5rem;color:var(--muted2);">Scanning…</span>
+        </div>
+        <div id="watch-grid" style="display:flex;flex-direction:column;gap:4px;max-height:300px;overflow-y:auto;"></div>
+      </div>
+
+      <!-- Activity Log -->
+      <div class="panel">
+        <div class="panel-hdr">⚡ ACTIVITY LOG</div>
+        <div id="log" style="font-size:0.6rem;font-family:var(--mono);max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:2px;"></div>
+      </div>
+    </div>
+
+  </div><!-- end app-grid -->
+</div><!-- end dashboard-panel -->
+
 <!-- ══ SIGNALS PANEL ══ -->
 <div id="signals-panel" style="display:none;">
 
   <!-- ── TOP BAR: Coin Manager ── -->
   <div style="display:flex;align-items:center;gap:8px;padding:7px 14px;background:var(--bg3);border-bottom:1px solid var(--border2);flex-wrap:wrap;">
     <span style="font-size:0.58rem;color:var(--accent);letter-spacing:0.14em;font-family:var(--mono);white-space:nowrap;">⬡ SIGNAL COINS</span>
+    <input id="sig-new-coin" style="display:none;"/>
     <div id="sig-coin-tabs" style="display:flex;gap:5px;flex-wrap:wrap;flex:1;min-width:0;"></div>
     <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-left:auto;">
       <button class="btn btn-outline btn-sm" onclick="openCoinManager()" style="color:var(--accent);border-color:var(--accent)">✏️ Edit List</button>
@@ -2055,9 +2347,8 @@ async function sendToExchange(name, direction, price, sl, tp1, posUSDT){
 
 // ─── ORDER STATUS UI ─────────────────────────────────────────
 function updateOrderStatus(ex, status, detail, profit){
-  document.getElementById(`ord-${ex}-status`).className=`ord-status ${status}`;
-  document.getElementById(`ord-${ex}-status`).textContent=status.toUpperCase();
-  document.getElementById(`ord-${ex}-detail`).textContent=detail;
+  const s=document.getElementById(`os-${ex}`);
+  if(s){s.textContent=status.toUpperCase();s.style.color=status==='fill'?'var(--green)':status==='error'?'var(--red)':'var(--muted2)';}
   document.getElementById(`ord-${ex}-profit`).textContent=profit;
 }
 
@@ -2572,8 +2863,10 @@ function saveSigState() {
 
 // ── TAB MANAGEMENT ────────────────────────────────────────────
 function switchTab(tab) {
-  document.getElementById('dashboard-panel').style.display = tab==='dashboard' ? '' : 'none';
-  document.getElementById('signals-panel').style.display   = tab==='signals'   ? '' : 'none';
+  const dp = document.getElementById('dashboard-panel');
+  const sp = document.getElementById('signals-panel');
+  if(dp) dp.style.display = tab==='dashboard' ? '' : 'none';
+  if(sp) sp.style.display = tab==='signals'   ? '' : 'none';
   document.querySelectorAll('.main-tab').forEach(b => b.classList.toggle('active', b.id==='tab-'+tab));
   if(tab==='signals') {
     buildSigCoinTabs();
