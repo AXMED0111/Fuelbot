@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
@@ -26,6 +26,38 @@
   --font:    'Oxanium', sans-serif;
   --mono:    'JetBrains Mono', monospace;
 }
+/* ── LIGHT MODE ── */
+[data-theme="light"] {
+  --bg:      #f0f4f8;
+  --bg2:     #ffffff;
+  --bg3:     #e8edf3;
+  --border:  #c8d6e5;
+  --border2: #b0c4d8;
+  --accent:  #0077cc;
+  --green:   #00aa55;
+  --green2:  #007a3d;
+  --red:     #dd2244;
+  --red2:    #991133;
+  --yellow:  #cc8800;
+  --orange:  #d96000;
+  --purple:  #7c3aed;
+  --muted:   #8fafc8;
+  --muted2:  #5a7a99;
+  --text:    #1a2b3c;
+}
+[data-theme="light"] body {
+  background: var(--bg);
+}
+[data-theme="light"] body::after {
+  background-image: linear-gradient(rgba(0,119,204,0.04) 1px,transparent 1px),
+                    linear-gradient(90deg,rgba(0,119,204,0.04) 1px,transparent 1px);
+}
+[data-theme="light"] body::before { display:none; }
+[data-theme="light"] .panel { box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+[data-theme="light"] header { background: linear-gradient(180deg,rgba(0,119,204,0.06),transparent); }
+[data-theme="light"] .logo { filter: drop-shadow(0 0 6px rgba(0,119,204,0.25)); }
+[data-theme="light"] #lock-screen { background: linear-gradient(135deg,#e8f0f8,#f4f7fb) !important; }
+
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
 body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,200,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,255,0.025) 1px,transparent 1px);background-size:36px 36px;pointer-events:none;z-index:0;}
@@ -663,7 +695,7 @@ header{position:relative;z-index:10;display:flex;justify-content:space-between;a
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="FuelBot PRO"/>
   <meta name="mobile-web-app-capable" content="yes"/>
-  <meta name="theme-color" content="#04080d"/>
+  <meta name="theme-color" content="#04080d" id="meta-theme-color"/>
   <meta name="application-name" content="FuelBot PRO"/>
 <style>
 #app-grid{display:grid;grid-template-columns:270px 1fr 230px;gap:10px;padding:12px 16px;}
@@ -887,6 +919,9 @@ async function checkPassword() {
 function unlockApp(animate) {
   const lock = document.getElementById('lock-screen');
   if(!lock) return;
+  // Re-apply saved theme after unlock
+  const savedTheme = localStorage.getItem('fb_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', savedTheme);
   if(animate) {
     document.getElementById('lock-icon').textContent = '🔓';
     document.getElementById('lock-icon').style.filter = 'drop-shadow(0 0 12px rgba(0,255,136,0.8))';
@@ -1137,6 +1172,26 @@ setTimeout(() => {
   </div>
 </div>
 
+<!-- ══ MANUAL HIT MODAL ══ -->
+<div class="modal-overlay" id="modal-manual-hit">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span id="mhit-title">✎ Mark Results</span>
+      <button class="modal-close" onclick="closeModal('modal-manual-hit')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:0.65rem;color:var(--muted2);margin-bottom:12px;">
+        Mark which price levels were hit after the day/week closed.
+      </div>
+      <div id="mhit-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+      <div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn btn-outline btn-sm" onclick="closeModal('modal-manual-hit')">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="saveManualHits()">✔ Save Results</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ HEADER ══ -->
 <header>
   <div class="logo">⬡ FUELBOT<sub>PRO v5</sub></div>
@@ -1148,6 +1203,7 @@ setTimeout(() => {
     <div class="hdr-stat"><span class="val" id="h-pnl" style="color:var(--green)">+$0</span><span class="lbl">EST. SESSION P&L</span></div>
   </div>
   <div class="hdr-right">
+    <button class="btn btn-icon" onclick="toggleTheme()" id="theme-btn" title="Toggle Light/Dark Mode">🌙</button>
     <button class="btn btn-icon" onclick="openModal('modal-risk')" title="Risk Settings">⚙</button>
     <button class="btn btn-icon" onclick="openModal('modal-exchange')" title="Exchange APIs">🔑</button>
     <button class="btn btn-icon" onclick="openModal('modal-sheets')" title="Google Sheets">📊</button>
@@ -1532,28 +1588,63 @@ setTimeout(() => {
   <!-- ══ DAILY TARGETS VIEW ══ -->
   <div id="view-daily" style="padding:12px 14px;">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-      <!-- Daily Targets List -->
+
+      <!-- TODAY'S PRICE LEVELS (no hit/miss until day ends) -->
       <div class="panel">
-        <div class="panel-hdr" style="margin-bottom:10px;">📅 DAILY PRICE TARGETS <span style="color:var(--muted2);font-weight:400;">(5 Levels)</span></div>
-        <div style="font-size:0.58rem;color:var(--muted2);margin-bottom:8px;">QPL + Fibonacci + Gann angles · Updates daily · 🟢 Hit · 🔴 Not hit</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <div class="panel-hdr" style="margin-bottom:0;">📅 TODAY'S PRICE LEVELS</div>
+          <div id="daily-date-badge" style="font-size:0.55rem;color:var(--muted2);font-family:var(--mono);"></div>
+        </div>
+        <div style="font-size:0.58rem;color:var(--muted2);margin-bottom:10px;padding:6px 8px;background:rgba(0,200,255,0.05);border-left:2px solid var(--accent);border-radius:2px;">
+          ⏳ Results shown only after day closes · No early green/red decisions
+        </div>
         <div id="daily-targets-list" style="display:flex;flex-direction:column;gap:6px;"></div>
       </div>
-      <!-- Session Quality & Live Price -->
-      <div class="panel">
-        <div class="panel-hdr" style="margin-bottom:10px;">⏰ SESSION QUALITY</div>
-        <div id="session-quality-block" style="display:flex;flex-direction:column;gap:6px;"></div>
-        <div class="panel-hdr" style="margin:14px 0 8px;">🎯 TRADE OPPORTUNITY</div>
-        <div id="opp-score-block"></div>
+
+      <!-- RIGHT: Session quality + Yesterday's summary -->
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="panel">
+          <div class="panel-hdr" style="margin-bottom:10px;">⏰ SESSION QUALITY</div>
+          <div id="session-quality-block" style="display:flex;flex-direction:column;gap:6px;"></div>
+          <div class="panel-hdr" style="margin:14px 0 8px;">🎯 TRADE OPPORTUNITY</div>
+          <div id="opp-score-block"></div>
+        </div>
+        <!-- YESTERDAY'S RESULTS SUMMARY -->
+        <div class="panel">
+          <div class="panel-hdr" style="margin-bottom:10px;">📊 YESTERDAY'S RESULTS</div>
+          <div id="yesterday-daily-summary" style="display:flex;flex-direction:column;gap:5px;">
+            <div style="color:var(--muted2);font-size:0.62rem;">Yesterday's results will appear here after the day closes.</div>
+          </div>
+        </div>
       </div>
+
     </div>
   </div>
 
   <!-- ══ WEEKLY TARGETS VIEW ══ -->
   <div id="view-weekly" style="display:none;padding:12px 14px;">
-    <div class="panel">
-      <div class="panel-hdr" style="margin-bottom:10px;">📆 WEEKLY PRICE TARGETS <span style="color:var(--muted2);font-weight:400;">(5 Levels · Gann + QPL Entelechy)</span></div>
-      <div style="font-size:0.58rem;color:var(--muted2);margin-bottom:10px;">Wider ranges · Time Algorithm projections · Resets weekly · 🟢 Hit · 🔴 Not hit</div>
-      <div id="weekly-targets-list" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+
+      <!-- THIS WEEK'S LEVELS (no hit/miss until week ends) -->
+      <div class="panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <div class="panel-hdr" style="margin-bottom:0;">📆 THIS WEEK'S LEVELS</div>
+          <div id="weekly-date-badge" style="font-size:0.55rem;color:var(--muted2);font-family:var(--mono);"></div>
+        </div>
+        <div style="font-size:0.58rem;color:var(--muted2);margin-bottom:10px;padding:6px 8px;background:rgba(255,213,0,0.05);border-left:2px solid var(--yellow);border-radius:2px;">
+          ⏳ Results shown only after week closes (Sunday) · Gann + QPL Entelechy levels
+        </div>
+        <div id="weekly-targets-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+      </div>
+
+      <!-- LAST WEEK'S RESULTS -->
+      <div class="panel">
+        <div class="panel-hdr" style="margin-bottom:10px;">📊 LAST WEEK'S RESULTS</div>
+        <div id="lastweek-summary" style="display:flex;flex-direction:column;gap:5px;">
+          <div style="color:var(--muted2);font-size:0.62rem;">Last week's results will appear here after the week closes.</div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -3393,75 +3484,193 @@ function getWeekKey() {
 
 // ── RENDER TARGETS ────────────────────────────────────────────
 function renderTargets(coin) {
-  renderDailyTargets(coin);
-  renderWeeklyTargets(coin);
+  renderDailyTargets(coin);   // calls renderYesterdaySummary internally
+  renderWeeklyTargets(coin);  // calls renderLastWeekSummary internally
 }
 
 function renderDailyTargets(coin) {
   const el = document.getElementById('daily-targets-list');
   if(!el) return;
   const d = SIG.daily[coin];
-  if(!d?.targets) { el.innerHTML='<div style="color:var(--muted2);font-size:0.65rem;">Loading…</div>'; return; }
 
-  const todayHist = SIG.history[coin]?.find(h=>h.date===d.date);
-  const hits = todayHist?.hits||{};
-  const livePrice = d.price;
+  // Update date badge
+  const badge = document.getElementById('daily-date-badge');
+  if(badge && d?.date) badge.textContent = 'Date: ' + d.date;
 
-  el.innerHTML = d.targets.map((t,i) => {
-    const key   = 'D'+(i+1);
-    const isUp  = t.dir==='UP';
-    const hit   = isUp ? livePrice >= t.price : livePrice <= t.price;
-    const pct   = ((t.price - livePrice)/livePrice*100).toFixed(2);
-    const mColor= t.method==='QPL'?'var(--accent)':t.method==='GANN'?'var(--yellow)':'var(--muted)';
-    return `<div class="target-row ${hit?'hit-green':'hit-red'}" onclick="toggleHit('${coin}','${key}')">
-      <div style="width:22px;height:22px;border-radius:50%;background:${hit?'var(--green2)':'var(--red2)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-        <span style="font-size:0.7rem;">${hit?'🟢':'🔴'}</span>
-      </div>
+  if(!d?.targets) {
+    el.innerHTML = '<div style="color:var(--muted2);font-size:0.65rem;">Loading…</div>';
+    renderYesterdaySummary(coin);
+    return;
+  }
+
+  const livePrice = coinCache[coin]?.price || d.price;
+  const fP = v => '$' + parseFloat(v).toLocaleString(undefined,{maximumFractionDigits:6});
+
+  // TODAY — show levels ONLY, no hit/miss dot, no green/red decision
+  el.innerHTML = d.targets.map((t, i) => {
+    const isUp   = t.dir === 'UP';
+    const pct    = ((t.price - livePrice) / livePrice * 100);
+    const pctStr = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+    const mColor = t.method==='QPL' ? 'var(--accent)' : t.method==='GANN' ? 'var(--yellow)' : 'var(--muted2)';
+    const dirColor = isUp ? 'var(--green)' : 'var(--red)';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:5px;border:1px solid var(--border2);background:var(--bg3);">
+      <div style="width:24px;height:24px;border-radius:50%;background:var(--bg2);border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:var(--muted2);flex-shrink:0;">${i+1}</div>
       <div style="flex:1;min-width:0;">
-        <div style="font-size:0.65rem;color:var(--muted2);letter-spacing:0.08em;">${t.label}</div>
-        <div style="font-size:0.85rem;font-weight:700;font-family:var(--mono);color:${hit?'var(--green)':'var(--text)'};">${fmtCoin?fmtCoin(t.price):'$'+t.price}</div>
+        <div style="font-size:0.58rem;color:var(--muted2);letter-spacing:0.06em;">${t.label}</div>
+        <div style="font-size:0.9rem;font-weight:700;font-family:var(--mono);color:var(--text);">${fP(t.price)}</div>
       </div>
       <div style="text-align:right;flex-shrink:0;">
-        <div style="font-size:0.6rem;color:${isUp?'var(--green)':'var(--red)'};font-weight:700;">${isUp?'▲':'▼'} ${Math.abs(pct)}%</div>
-        <div style="font-size:0.5rem;color:${mColor};margin-top:1px;">${t.method}</div>
+        <div style="font-size:0.65rem;font-weight:700;color:${dirColor};">${isUp ? '▲' : '▼'} ${pctStr}</div>
+        <div style="font-size:0.48rem;color:${mColor};margin-top:2px;letter-spacing:0.08em;">${t.method}</div>
       </div>
     </div>`;
   }).join('');
+
+  // Render yesterday summary in the right panel
+  renderYesterdaySummary(coin);
 }
+
+function renderYesterdaySummary(coin) {
+  const el = document.getElementById('yesterday-daily-summary');
+  if(!el) return;
+  const today = new Date().toISOString().slice(0,10);
+  const hist  = SIG.history[coin] || [];
+  // Find yesterday's or most recent past entry (not today)
+  const past = hist.filter(h => h.date < today);
+  if(!past.length) {
+    el.innerHTML = '<div style="font-size:0.62rem;color:var(--muted2);">No completed days yet. Yesterday's results will appear here.</div>';
+    return;
+  }
+  const yest = past[0]; // most recent past day
+  const isUp = yest.direction === 'up';
+  const fP = v => '$' + parseFloat(v).toLocaleString(undefined,{maximumFractionDigits:6});
+  const hitCount = Object.values(yest.hits || {}).filter(Boolean).length;
+  const total = yest.daily?.length || 0;
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:6px 10px;border-radius:5px;background:var(--bg3);">
+      <div style="font-size:0.65rem;font-weight:700;color:var(--accent);font-family:var(--mono);">${yest.date}</div>
+      <div style="font-size:0.6rem;padding:2px 8px;border-radius:10px;border:1px solid ${isUp?'var(--green2)':'var(--red2)'};color:${isUp?'var(--green)':'var(--red)'};">${isUp?'📈 BULLISH':'📉 BEARISH'}</div>
+      <div style="font-size:0.6rem;font-weight:700;color:var(--yellow);margin-left:auto;">✓ ${hitCount}/${total} HIT</div>
+    </div>
+    ${(yest.daily||[]).map((t,i) => {
+      const key = 'D'+(i+1);
+      const hit = yest.hits?.[key];
+      const fmtPrice = fP(t.price);
+      return `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:4px;border:1px solid ${hit?'var(--green2)':'var(--border2)'};background:${hit?'rgba(0,255,136,0.05)':'var(--bg3)'};margin-bottom:3px;">
+        <span style="font-size:0.85rem;">${hit ? '🟢' : '🔴'}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:0.56rem;color:var(--muted2);">${t.label}</div>
+          <div style="font-size:0.72rem;font-family:var(--mono);color:${hit?'var(--green)':'var(--text)'};">${fmtPrice}</div>
+        </div>
+        <div style="font-size:0.6rem;font-weight:700;color:${hit?'var(--green)':'var(--red)'};">${hit?'HIT':'MISS'}</div>
+      </div>`;
+    }).join('')}
+    <div style="margin-top:6px;font-size:0.52rem;color:var(--muted2);text-align:right;">
+      Tap any level to manually mark as hit/miss · <button onclick="openManualHitModal('${coin}','${yest.date}')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:0.52rem;">✎ Edit</button>
+    </div>`;
+}
+
 
 function renderWeeklyTargets(coin) {
   const el = document.getElementById('weekly-targets-list');
   if(!el) return;
   const d = SIG.weekly[coin];
-  if(!d?.targets) { el.innerHTML='<div style="color:var(--muted2);font-size:0.65rem;">Loading…</div>'; return; }
-  const livePrice = d.price;
 
-  el.innerHTML = d.targets.map((t,i) => {
-    const isUp = t.dir==='UP';
-    const hit  = isUp ? livePrice >= t.price : livePrice <= t.price;
-    const pct  = ((t.price-livePrice)/livePrice*100).toFixed(2);
-    const mColor= t.method==='QPL'?'var(--accent)':t.method==='GANN'?'var(--yellow)':'var(--muted)';
-    return `<div class="target-row ${hit?'hit-green':'hit-red'}">
-      <div style="width:22px;height:22px;border-radius:50%;background:${hit?'var(--green2)':'var(--red2)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-        <span style="font-size:0.7rem;">${hit?'🟢':'🔴'}</span>
-      </div>
+  // Update week badge
+  const badge = document.getElementById('weekly-date-badge');
+  if(badge && d?.weekKey) badge.textContent = 'w/c ' + d.weekKey;
+
+  if(!d?.targets) {
+    el.innerHTML = '<div style="color:var(--muted2);font-size:0.65rem;">Loading…</div>';
+    renderLastWeekSummary(coin);
+    return;
+  }
+
+  const livePrice = coinCache[coin]?.price || d.price;
+  const fP = v => '$' + parseFloat(v).toLocaleString(undefined,{maximumFractionDigits:6});
+
+  // THIS WEEK — show levels only, no hit/miss decision until week closes
+  el.innerHTML = d.targets.map((t, i) => {
+    const isUp   = t.dir === 'UP';
+    const pct    = ((t.price - livePrice) / livePrice * 100);
+    const pctStr = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+    const mColor = t.method==='QPL' ? 'var(--accent)' : t.method==='GANN' ? 'var(--yellow)' : 'var(--muted2)';
+    const dirColor = isUp ? 'var(--green)' : 'var(--red)';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:5px;border:1px solid var(--border2);background:var(--bg3);">
+      <div style="width:24px;height:24px;border-radius:50%;background:var(--bg2);border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:var(--muted2);flex-shrink:0;">W${i+1}</div>
       <div style="flex:1;min-width:0;">
-        <div style="font-size:0.62rem;color:var(--muted2);">${t.label}</div>
-        <div style="font-size:0.82rem;font-weight:700;font-family:var(--mono);color:${hit?'var(--green)':'var(--text)'};">${fmtCoin?fmtCoin(t.price):'$'+t.price}</div>
+        <div style="font-size:0.58rem;color:var(--muted2);letter-spacing:0.06em;">${t.label}</div>
+        <div style="font-size:0.9rem;font-weight:700;font-family:var(--mono);color:var(--text);">${fP(t.price)}</div>
       </div>
       <div style="text-align:right;flex-shrink:0;">
-        <div style="font-size:0.6rem;color:${isUp?'var(--green)':'var(--red)'};font-weight:700;">${isUp?'▲':'▼'} ${Math.abs(pct)}%</div>
-        <div style="font-size:0.5rem;color:${mColor};">${t.method}</div>
+        <div style="font-size:0.65rem;font-weight:700;color:${dirColor};">${isUp ? '▲' : '▼'} ${pctStr}</div>
+        <div style="font-size:0.48rem;color:${mColor};margin-top:2px;letter-spacing:0.08em;">${t.method}</div>
       </div>
     </div>`;
   }).join('');
+
+  renderLastWeekSummary(coin);
 }
 
+function renderLastWeekSummary(coin) {
+  const el = document.getElementById('lastweek-summary');
+  if(!el) return;
+  const currentWeek = getWeekKey();
+  const hist = SIG.history[coin] || [];
+  // Find entries from a different week (older)
+  const pastWeekEntries = hist.filter(h => {
+    const d = new Date(h.date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day===0?-6:1);
+    const entryWeek = new Date(d.setDate(diff)).toISOString().slice(0,10);
+    return entryWeek < currentWeek;
+  });
+
+  if(!pastWeekEntries.length) {
+    el.innerHTML = '<div style="font-size:0.62rem;color:var(--muted2);">No completed weeks yet. Last week's results will appear here after Sunday.</div>';
+    return;
+  }
+
+  // Get the most recent past week
+  const lastWeek = pastWeekEntries[0];
+  const isUp = lastWeek.direction === 'up';
+  const fP = v => '$' + parseFloat(v).toLocaleString(undefined,{maximumFractionDigits:6});
+  const hitCount = Object.values(lastWeek.hits || {}).filter(k => k.startsWith?.('W') || true).filter(Boolean).length;
+  const weeklyEntries = lastWeek.weekly || [];
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:6px 10px;border-radius:5px;background:var(--bg3);">
+      <div style="font-size:0.65rem;font-weight:700;color:var(--accent);font-family:var(--mono);">w/c ${lastWeek.date}</div>
+      <div style="font-size:0.6rem;padding:2px 8px;border-radius:10px;border:1px solid ${isUp?'var(--green2)':'var(--red2)'};color:${isUp?'var(--green)':'var(--red)'};">${isUp?'📈 BULLISH':'📉 BEARISH'}</div>
+    </div>
+    ${weeklyEntries.length ? weeklyEntries.map((t,i) => {
+      const key = 'W'+(i+1);
+      const hit = lastWeek.hits?.[key];
+      return `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:4px;border:1px solid ${hit?'var(--green2)':'var(--border2)'};background:${hit?'rgba(0,255,136,0.05)':'var(--bg3)'};margin-bottom:3px;">
+        <span style="font-size:0.85rem;">${hit ? '🟢' : '🔴'}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:0.56rem;color:var(--muted2);">${t.label}</div>
+          <div style="font-size:0.72rem;font-family:var(--mono);color:${hit?'var(--green)':'var(--text)'};">${fP(t.price)}</div>
+        </div>
+        <div style="font-size:0.6rem;font-weight:700;color:${hit?'var(--green)':'var(--red)'};">${hit?'HIT':'MISS'}</div>
+      </div>`;
+    }).join('') : `<div style="font-size:0.62rem;color:var(--muted2);padding:6px;">No weekly targets recorded for that week.</div>`}
+    <div style="margin-top:6px;font-size:0.52rem;color:var(--muted2);text-align:right;">
+      <button onclick="openManualHitModal('${coin}','${lastWeek.date}','weekly')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:0.52rem;">✎ Mark Results</button>
+    </div>`;
+}
+
+
 function toggleHit(coin, key) {
-  const hist = SIG.history[coin]?.[0];
+  const today = new Date().toISOString().slice(0,10);
+  // Only allow toggling PAST days from history (not today)
+  const hist = SIG.history[coin]?.find(h => h.date < today);
   if(!hist) return;
+  if(!hist.hits) hist.hits = {};
   hist.hits[key] = !hist.hits[key];
   saveSigState();
+  renderYesterdaySummary(coin);
 }
 
 // ── HISTORY RENDERER ──────────────────────────────────────────
@@ -3719,6 +3928,85 @@ setInterval(() => {
 </script>
 <script>
 // ── BOOT SEQUENCE ────────────────────────────────────────────
+
+// ── THEME TOGGLE ──────────────────────────────────────────────
+(function initTheme() {
+  const saved = localStorage.getItem('fb_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+  const btn = document.getElementById('theme-btn');
+  if(btn) btn.textContent = saved === 'light' ? '🌙' : '☀️';
+})();
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next    = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('fb_theme', next);
+  const btn = document.getElementById('theme-btn');
+  if(btn) btn.textContent = next === 'light' ? '🌙' : '☀️';
+}
+
+// ── MANUAL HIT MODAL ──────────────────────────────────────────
+let _mhitCoin = '', _mhitDate = '', _mhitType = 'daily';
+
+function openManualHitModal(coin, date, type = 'daily') {
+  _mhitCoin = coin;
+  _mhitDate = date;
+  _mhitType = type;
+
+  const hist  = SIG.history[coin]?.find(h => h.date === date);
+  if(!hist) return;
+  const targets = type === 'weekly' ? (hist.weekly || []) : (hist.daily || []);
+  const prefix  = type === 'weekly' ? 'W' : 'D';
+
+  const fP = v => '$' + parseFloat(v).toLocaleString(undefined, {maximumFractionDigits:6});
+
+  document.getElementById('mhit-title').textContent =
+    `✎ Mark ${type === 'weekly' ? 'Weekly' : 'Daily'} Results — ${coin} · ${date}`;
+
+  document.getElementById('mhit-list').innerHTML = targets.map((t, i) => {
+    const key = prefix + (i+1);
+    const hit = hist.hits?.[key] || false;
+    return `<label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:5px;border:1px solid var(--border2);background:var(--bg3);cursor:pointer;">
+      <input type="checkbox" id="mhit-${key}" ${hit ? 'checked' : ''}
+        style="width:16px;height:16px;accent-color:var(--green);cursor:pointer;"/>
+      <div style="flex:1;">
+        <div style="font-size:0.6rem;color:var(--muted2);">${t.label}</div>
+        <div style="font-size:0.78rem;font-weight:700;font-family:var(--mono);">${fP(t.price)}</div>
+      </div>
+      <span id="mhit-icon-${key}" style="font-size:1.1rem;">${hit ? '🟢' : '🔴'}</span>
+    </label>`;
+  }).join('');
+
+  // Live checkbox update
+  targets.forEach((t, i) => {
+    const key = prefix + (i+1);
+    const cb  = document.getElementById('mhit-' + key);
+    const ic  = document.getElementById('mhit-icon-' + key);
+    if(cb && ic) cb.onchange = () => { ic.textContent = cb.checked ? '🟢' : '🔴'; };
+  });
+
+  openModal('modal-manual-hit');
+}
+
+function saveManualHits() {
+  const hist    = SIG.history[_mhitCoin]?.find(h => h.date === _mhitDate);
+  if(!hist)     { closeModal('modal-manual-hit'); return; }
+  const targets = _mhitType === 'weekly' ? (hist.weekly || []) : (hist.daily || []);
+  const prefix  = _mhitType === 'weekly' ? 'W' : 'D';
+  if(!hist.hits) hist.hits = {};
+  targets.forEach((t, i) => {
+    const key = prefix + (i+1);
+    const cb  = document.getElementById('mhit-' + key);
+    if(cb) hist.hits[key] = cb.checked;
+  });
+  saveSigState();
+  closeModal('modal-manual-hit');
+  // Re-render
+  if(_mhitType === 'daily')  { renderYesterdaySummary(_mhitCoin); }
+  else                        { renderLastWeekSummary(_mhitCoin); }
+}
+
 (function boot() {
   // Build signal coin tabs on load
   buildSigCoinTabs();
