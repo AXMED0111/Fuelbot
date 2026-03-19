@@ -1039,27 +1039,122 @@ setTimeout(() => {
     <div class="modal-body">
       <div class="form-row">
         <label>Risk Per Trade (%)</label>
-        <input type="number" id="set-risk" value="1.5" min="0.1" max="10" step="0.1"/>
+        <input type="number" id="set-risk" value="1.0" min="0.1" max="5" step="0.1"/>
         <span class="form-hint">e.g. 1.5 = 1.5% of balance</span>
       </div>
       <div class="form-row">
         <label>Stop Loss Distance (%)</label>
-        <input type="number" id="set-sl" value="0.5" min="0.1" max="5" step="0.05"/>
+        <input type="number" id="set-sl" value="1.0" min="0.1" max="5" step="0.05" title="Base SL — overridden by ATR if ATR-SL is on"/>
         <span class="form-hint">Distance from entry to stop loss</span>
       </div>
       <div class="form-row">
         <label>Take Profit 1 (R multiple)</label>
-        <input type="number" id="set-tp1" value="2" min="1" max="10" step="0.5"/>
+        <input type="number" id="set-tp1" value="3.0" min="1" max="10" step="0.5"/>
         <span class="form-hint">e.g. 2 = 2× risk distance</span>
       </div>
       <div class="form-row">
         <label>Take Profit 2 (R multiple)</label>
-        <input type="number" id="set-tp2" value="3" min="1" max="20" step="0.5"/>
+        <input type="number" id="set-tp2" value="4" min="1" max="20" step="0.5"/>
         <span class="form-hint">e.g. 3 = 3× risk distance</span>
       </div>
       <div class="form-row">
+        <label>Max Position Size (% of balance)</label>
+        <input type="number" id="set-max-pos" value="100" min="10" max="100" step="5" style="background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:0.85rem;outline:none;width:100%;"/>
+        <span class="form-hint">40% = max $20 position on $50 balance (protects account)</span>
+      </div>
+      <div class="form-row">
+        <label>Min Order Size (USDT)</label>
+        <input type="number" id="set-min-notional" value="10" min="5" max="100" step="5" style="background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:0.85rem;outline:none;width:100%;"/>
+        <span class="form-hint">Binance minimum is $10 USDT per spot order</span>
+      </div>
+      <div class="form-row">
+        <label>Min Score to Trade (0–10)</label>
+        <input type="number" id="set-min-score" value="7.0" min="3" max="9.5" step="0.5" style="background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:0.85rem;outline:none;width:100%;"/>
+        <span class="form-hint">Only trade when score ≥ this (recommended: 7.0)</span>
+      </div>
+      <div class="form-row">
+        <label>Mon/Tue Min Score (weak days)</label>
+        <input type="number" id="set-weekday-score" value="8.0" min="5" max="10" step="0.5" style="background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:0.85rem;outline:none;width:100%;"/>
+        <span class="form-hint">Mon &amp; Tue avg 29-32% WR — require higher score</span>
+      </div>
+      <div class="form-row">
+        <label>ATR Multiplier (stop loss scale)</label>
+        <input type="number" id="set-atr-mult" value="2.0"  min="0.5" max="4" step="0.1" style="background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:0.85rem;outline:none;width:100%;"/>
+        <span class="form-hint">SL = ATR(14) × this (1.5 = optimal per backtest)</span>
+      </div>
+      <div class="form-row" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <label style="min-width:150px;">ATR Dynamic SL</label>
+        <input type="checkbox" id="set-use-atr-sl" checked style="width:18px;height:18px;accent-color:var(--accent);"/>
+        <span class="form-hint" style="margin:0;">SL scales with volatility (recommended ON)</span>
+      </div>
+      <div class="form-row">
+        <label>Volume Spike Minimum (×avg)</label>
+        <input type="number" id="set-vol-spike" value="1.5" min="0.8" max="5" step="0.1" style="background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:0.85rem;outline:none;width:100%;"/>
+        <span class="form-hint">Min volume vs 7-period avg to allow entry (1.5 = 50% above avg)</span>
+      </div>
+      <div class="form-row" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <label style="min-width:150px;">Breakout Confirm</label>
+        <input type="checkbox" id="set-require-breakout" checked style="width:18px;height:18px;accent-color:var(--accent);"/>
+        <span class="form-hint" style="margin:0;">Price must exceed candle high before entry — kills 53% of noise losses</span>
+      </div>
+      <div class="form-row" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <label style="min-width:150px;">SL Below Candle Low</label>
+        <input type="checkbox" id="set-sl-candle-low" checked style="width:18px;height:18px;accent-color:var(--accent);"/>
+        <span class="form-hint" style="margin:0;">SL below signal candle low — respects real support level</span>
+      </div>
+      <div class="form-row" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <label style="min-width:150px;">Confirm Delay</label>
+        <input type="checkbox" id="set-confirm-delay" checked style="width:18px;height:18px;accent-color:var(--accent);"/>
+        <span class="form-hint" style="margin:0;">Wait 1 candle to confirm signal — cuts noise hits by ~20%</span>
+      </div>
+      <div class="form-row" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <label style="min-width:150px;">Market Regime Filter</label>
+        <input type="checkbox" id="set-filter-regime" checked style="width:18px;height:18px;accent-color:var(--accent);"/>
+        <span class="form-hint" style="margin:0;">Skip ranging/choppy markets — only trade trending</span>
+      </div>
+      <div class="form-row" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <label style="min-width:150px;">Weekday Filter</label>
+        <input type="checkbox" id="set-filter-weekday" checked style="width:18px;height:18px;accent-color:var(--accent);"/>
+        <span class="form-hint" style="margin:0;">Higher score on Mon &amp; Tue (backtest worst days)</span>
+      </div>
+      <div class="form-row" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <label style="min-width:150px;">Trailing SL</label>
+        <input type="checkbox" id="set-trailing-sl" checked style="width:18px;height:18px;accent-color:var(--accent);"/>
+        <span class="form-hint" style="margin:0;">Move SL to break-even after TP1 — locks profit</span>
+      </div>
+      <div class="form-row" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <label style="min-width:150px;">⚡ Liquidation Filter</label>
+        <input type="checkbox" id="set-filter-liq" checked style="width:18px;height:18px;accent-color:var(--accent);"/>
+        <span class="form-hint" style="margin:0;">Block entries during long liquidation cascades — allow during short squeezes</span>
+      </div>
+      <div class="form-row">
+        <label>Liq Threshold ($USD in 15min window)</label>
+        <input type="number" id="set-liq-threshold" value="500000" min="100000" max="10000000" step="100000" style="background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:0.85rem;outline:none;width:100%;"/>
+        <span class="form-hint">Min BTC liquidation $ in last 15min to trigger signal (default $500K)</span>
+      </div>
+      <div class="form-row" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <label style="min-width:150px;">Directional Liq Block</label>
+        <input type="checkbox" id="set-liq-directional" checked style="width:18px;height:18px;accent-color:var(--accent);"/>
+        <span class="form-hint" style="margin:0;">Block BUY when long cascade detected — bearish momentum</span>
+      </div>
+      <div class="form-row" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <label style="min-width:150px;">Mandatory Filters</label>
+        <input type="checkbox" id="set-mandatory-filters" checked style="width:18px;height:18px;accent-color:var(--accent);"/>
+        <span class="form-hint" style="margin:0;">Vol+RSI+4h+Regime ALL pass — hard block not score penalty</span>
+      </div>
+      <div class="form-row">
+        <label>Max Trades Per Day</label>
+        <input type="number" id="set-max-trades-top" value="5" min="1" max="30" style="background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:0.85rem;outline:none;width:100%;"/>
+        <span class="form-hint">Hard daily cap across all sessions</span>
+      </div>
+      <div class="form-row">
+        <label>Cooldown Between Trades (minutes)</label>
+        <input type="number" id="set-cooldown" value="30" min="5" max="120" step="5" style="background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:0.85rem;outline:none;width:100%;"/>
+        <span class="form-hint">Prevents over-trading — waits this long after each fill</span>
+      </div>
+      <div class="form-row">
         <label>Account Balance (USDT)</label>
-        <input type="number" id="set-balance" value="1000" min="10" step="10"/>
+        <input type="number" id="set-balance" value="50" min="10" step="5"/>
         <span class="form-hint">Used to calculate position size</span>
       </div>
       <div class="form-row">
@@ -1069,6 +1164,23 @@ setTimeout(() => {
       </div>
       <div style="border-top:1px solid var(--border2);margin:16px 0;padding-top:16px;">
         <div style="font-size:0.62rem;color:var(--accent);letter-spacing:0.14em;margin-bottom:12px;">🔌 PROXY SERVER (RAILWAY)</div>
+        <div class="form-row" style="margin-bottom:16px;">
+          <label style="display:block;margin-bottom:8px;font-size:0.7rem;color:var(--muted2);letter-spacing:0.08em;">ENHANCED FILTERS</label>
+          <div style="display:flex;flex-direction:column;gap:7px;padding:10px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;">
+            <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;cursor:pointer;">
+              <input type="checkbox" id="set-filter-vol" checked style="accent-color:var(--accent);width:14px;height:14px;"/>
+              <span>Volume Confirmation</span><span style="color:var(--muted2);font-size:0.6rem;margin-left:4px;">above-avg volume only</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;cursor:pointer;">
+              <input type="checkbox" id="set-filter-rsi" checked style="accent-color:var(--accent);width:14px;height:14px;"/>
+              <span>RSI Zone 42-72</span><span style="color:var(--muted2);font-size:0.6rem;margin-left:4px;">avoid overbought / oversold</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:0.68rem;cursor:pointer;">
+              <input type="checkbox" id="set-filter-4h" checked style="accent-color:var(--accent);width:14px;height:14px;"/>
+              <span>4h Trend Alignment</span><span style="color:var(--muted2);font-size:0.6rem;margin-left:4px;">BTC/ETH/SOL/LINK/TAO only</span>
+            </label>
+          </div>
+        </div>
         <div class="form-row">
           <label>Railway Proxy URL</label>
           <input type="text" id="set-proxy-url" placeholder="https://fuelbot-proxy-production.up.railway.app"/>
@@ -1116,7 +1228,7 @@ setTimeout(() => {
         <div class="form-row"><label>API Secret</label><input type="password" id="binance-secret" placeholder="Paste Binance Secret…"/></div>
         <div class="form-row">
           <label>Mode</label>
-          <select id="binance-mode"><option value="spot-live" selected>Spot Live</option></select>
+          <select id="binance-mode"><option value="spot-live" selected>Spot Live ✅</option></select>
         </div>
         <div class="form-row"><label>Symbol</label><input type="text" id="binance-symbol" value="BTCUSDT"/></div>
         <div class="api-test-row">
@@ -1339,6 +1451,10 @@ setTimeout(() => {
   <div class="logo">⬡ FUELBOT<sub>PRO v5</sub></div>
   <div class="hdr-center">
     <div class="hdr-stat"><span class="val" id="h-price">—</span><span class="lbl" id="h-pair-lbl">BTC/USD</span></div>
+    <div class="hdr-stat"><span class="val" id="h-mode" style="color:var(--red);font-size:0.7rem;font-weight:900;">ALL-IN 🔥</span></div>
+    <div class="hdr-stat" style="cursor:pointer;" onclick="toggleStargatePanel()"><span class="val" style="color:var(--yellow);font-size:0.7rem;font-weight:700;">⭐ SG</span><span class="lbl">STARGATE</span></div>
+    <div class="hdr-stat"><span class="val" id="liq-stats" style="font-size:0.68rem;color:var(--muted2);">LIQ —</span><span class="lbl">LIQ $</span><span class="lbl">MODE</span></div>
+    <div class="hdr-stat"><span class="val" style="color:var(--green);font-size:0.7rem;font-weight:700;">SPOT ✅</span><span class="lbl">TYPE</span><span class="lbl">MODE</span></div>
     <div class="hdr-stat"><span class="val" id="h-change">—</span><span class="lbl">24H CHANGE</span></div>
     <div class="hdr-stat"><span class="val" id="h-vol">—</span><span class="lbl">24H VOLUME</span></div>
     <div class="hdr-stat"><span class="val" id="h-trades">0</span><span class="lbl">TODAY'S TRADES</span></div>
@@ -1457,7 +1573,13 @@ setTimeout(() => {
           <div class="filter-item"><span class="filter-dot" id="f-mom-dot"></span><span class="filter-lbl">Momentum</span><span class="filter-val" id="f-mom-val">—</span></div>
           <div class="filter-item"><span class="filter-dot" id="f-trend-dot"></span><span class="filter-lbl">Trend</span><span class="filter-val" id="f-trend-val">—</span></div>
           <div class="filter-item"><span class="filter-dot" id="f-body-dot"></span><span class="filter-lbl">Candle Body</span><span class="filter-val" id="f-body-val">—</span></div>
+          <div class="filter-item"><span class="filter-dot" id="f-regime-dot"></span><span class="filter-lbl">Market Regime</span><span class="filter-val" id="f-regime-val">—</span></div>
+          <div class="filter-item"><span class="filter-dot" id="f-breakout-dot"></span><span class="filter-lbl">🚀 Breakout</span><span class="filter-val" id="f-breakout-val" style="font-size:0.75rem;">—</span></div>
+          <div class="filter-item"><span class="filter-dot" id="f-liq-dot"></span><span class="filter-lbl">⚡ Liquidations</span><span class="filter-val" id="f-liq-val" style="font-size:0.75rem;">—</span></div>
           <div class="filter-item"><span class="filter-dot" id="f-news-dot"></span><span class="filter-lbl">News Filter</span><span class="filter-val" id="f-news-val">—</span></div>
+          <div class="filter-item"><span class="filter-dot" id="f-vol-dot"></span><span class="filter-lbl">Volume ×avg</span><span class="filter-val" id="f-vol-val">—</span></div>
+          <div class="filter-item"><span class="filter-dot" id="f-rsi-dot"></span><span class="filter-lbl">RSI Zone</span><span class="filter-val" id="f-rsi-val">—</span></div>
+          <div class="filter-item"><span class="filter-dot" id="f-4h-dot"></span><span class="filter-lbl">4h Trend</span><span class="filter-val" id="f-4h-val">—</span></div>
         </div>
         <div style="display:flex;gap:6px;margin-top:8px;">
           <button class="btn btn-sm" onclick="setNews(true)" id="btn-news-on" style="flex:1;font-size:0.6rem;background:rgba(255,45,85,0.1);border:1px solid var(--red2);color:var(--red);">📰 News ON</button>
@@ -1562,7 +1684,7 @@ setTimeout(() => {
         </div>
         <div id="exec-row" style="display:flex;gap:6px;margin-bottom:10px;">
           <button class="btn btn-primary" onclick="executeTrade('BUY')" style="flex:1;background:rgba(0,255,136,0.12);border:1px solid var(--green2);color:var(--green);font-weight:700;">▲ BUY LONG</button>
-          <button class="btn btn-primary" onclick="executeTrade('SELL')" style="flex:1;background:rgba(255,45,85,0.12);border:1px solid var(--red2);color:var(--red);font-weight:700;">▼ SELL SHORT</button>
+          <button class="btn btn-primary" onclick="executeTrade('SELL')" style="flex:1;background:var(--bg3);border:1px solid var(--border2);color:var(--muted2);font-weight:400;cursor:not-allowed;opacity:0.45;" disabled title="Spot only — shorting disabled">▼ SHORT (disabled)</button>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:0.6rem;margin-bottom:8px;">
           <div style="padding:5px 8px;background:var(--bg3);border-radius:3px;"><span style="color:var(--muted2);">Direction: </span><span id="kv-dir" style="font-weight:700;">—</span></div>
@@ -1888,14 +2010,107 @@ setTimeout(() => {
 
 // ─── SETTINGS (editable via modal) ───────────────────────────
 let SETTINGS = {
-  riskPct:     1.5,
-  slDist:      0.5,
-  tp1R:        2,
-  tp2R:        3,
-  balance:     1000,
-  maxTrades:   2,
-  proxyUrl:    '',     // Railway proxy URL — set in ⚙ settings
-  botSecret:   '',     // Must match BOT_SECRET on Railway
+  // ── Core risk ──────────────────────────────────────────
+  slDist:      1.0,    // base SL% — overridden by ATR if useAtrSl=true
+  tp1R:        3.0,    // TP1 = 1:3 RR — data proven: 37% WR × 3× RR = +EV
+  tp2R:        3.0,    // TP2 = trailing SL handles extension
+  balance:     50,
+  maxPosPct:   100,    // ALL-IN
+  minNotional: 10,
+  maxTrades:   5,
+  minScore:    7.0,
+  cooldownMins:30,
+  spotOnly:    true,
+  riskPct:     1.0,
+
+  // ── NEW: ATR-based dynamic stop loss ──────────────────
+  // Backtest: fixed SL hit 65.6% of trades. ATR scales with actual volatility.
+  useAtrSl:    true,
+  atrMult:     2.0,    // RAISED 1.5→2.0: SL below candle low needs more room
+
+  // ── FIX 1: Breakout confirmation (biggest WR killer fixed) ──────
+  // 675 of 1255 SL hits (53.8%) happened in <30min = price never confirmed
+  // Require price to exceed the signal candle HIGH before entry fires
+  // This ensures we enter on BREAKOUT not on pullback/consolidation
+  requireBreakout: true,  // price must exceed signal candle high before BUY
+
+  // ── FIX 2: Strict volume spike (raised from 1.1× to 1.5×) ───────
+  // Low vol entries: 30% WR. High vol entries: 55%+ WR
+  // Raising threshold cuts losing trades without touching winners
+  volSpikeMin:  1.5,   // was 1.1 — require genuine volume surge
+
+  // ── FIX 3: SL below candle low (replaces pure ATR) ──────────────
+  // ATR×1.5 = 0.4-0.6% on calm days = inside normal wick range
+  // SL placed below actual candle low = respects real support level
+  slBelowCandleLow: true,   // SL = candle_low × (1 - buffer%)
+  slCandleBuffer:   0.001,  // 0.1% buffer below candle low
+
+  // ── FIX 4: Score 9+ strict gate ─────────────────────────────────
+  // Score 7=39.5% WR, Score 9=43.8% WR — raise bar significantly
+  // Forces all 3 key filters AND 3 green candles to be present
+  minScore:    7.0,    // keep 7.0 but score 9 now requires 3G+breakout+vol
+
+  // ── NEW: Candle confirmation delay ─────────────────────
+  // 826 trades lost in <60min at only 19.2% WR — pure noise hits.
+  // Wait 1 full candle (15min) after signal before allowing entry.
+  confirmDelay:true,   // require 1 extra closed candle confirming move
+
+  // ── NEW: Market regime filter ──────────────────────────
+  // Feb-Mar collapsed to 28% WR — bot traded ranging market like trending.
+  // Only trade when 20-candle range > atrRegimeMult × ATR = trending.
+  filterRegime:true,
+  atrRegimeMult:1.2,   // 20-candle range must exceed 1.2 × ATR(14)
+
+  // ── NEW: Weekday filter ────────────────────────────────
+  // Mon/Tue avg 29-32% WR vs Fri/Sat 40-41%.
+  // Raise min score on worst days same as Asian session logic.
+  filterWeekday:true,
+  weekdayMinScore:8.0, // required score Mon & Tue (worst days)
+
+  // ── NEW: Trailing SL after TP1 ─────────────────────────
+  // Replaces unreachable TP2 (hit only 1.4% of trades).
+  // After TP1 hit, SL moves to break-even — locks profit.
+  trailingSl:  true,   // enable trailing SL management
+
+  // ── Existing enhanced filters ─────────────────────────
+  filterVol:   true,
+  filterRSI:   true,
+  filter4h:    true,
+
+  // ── Mandatory filter gate (replaces score-soft-penalty) ─
+  // Vol + RSI + 4h must ALL pass hard — not just reduce score.
+  mandatoryFilters: true,
+
+  // ── Coin profile ──────────────────────────────────────
+  highVolCoins:['XRP','DOGE','EPIC','SEI','XLM','POL','IOTA'],
+
+  // ── Liquidation Filter ─────────────────────────────────────
+  filterLiq:       true,
+  liqWindowMs:     900000,   // 15-min window
+  liqThresholdUSD: 500000,   // $500K minimum
+  liqDirectional:  true,     // block BUY on long cascades
+
+  // ── STARGATE MODE (AXMED DHALAC STRATEGY) ─────────────────────
+  // Multi-timeframe 5-layer signal: 4h trend + 1h momentum + microstructure
+  // + 15m precision entry + risk gate = 50-66%+ WR with 1:2.5/1:5 RR
+  // PASSWORD PROTECTED — only visible after writing: AXMED DHALAC STRATEGY
+  stargateMode:    false,
+  stargateUnlocked:false,
+  stargatePartial: true,
+  stargateTP1R:    3.0,   // TP1 = 1:3 RR (raised — makes more per win)
+  stargateTP2R:    6.0,   // TP2 = 1:6 RR (trail from BE)
+  stargateCooldown:90,
+  stargateMaxTrades:3,
+  stargateVolMin:  1.5,   // volume spike minimum 1.5×
+  stargateMinScore:7.5,   // score gate
+  stargateCoins:['AVAXUSDT','SOLUSDT','ETHUSDT','LINKUSDT','TAOUSDT','XLMUSDT','ADAUSDT','BTCUSDT'],
+  // Fractal settings
+  fractalBars:    2,    // 5-bar fractal: 2 confirming bars each side
+  fractalLookback:30,  // how many bars to look back for fractals
+  fractalSL:      true, // use 1h bullish fractal as SL (vs arbitrary distance)
+
+  proxyUrl:    '',
+  botSecret:   '',
 };
 
 // ─── EXCHANGE CONFIG ──────────────────────────────────────────
@@ -1911,34 +2126,41 @@ let SHEETS = { url: 'https://script.google.com/macros/s/AKfycbwbAW-wyzefq0ACw3-R
 // ─── COIN CATALOGUE ───────────────────────────────────────────
 // Format: { symbol, label, icon, decimals, minQty }
 const COIN_CATALOGUE = [
-  { symbol:'BTCUSDT',  base:'BTC',  label:'Bitcoin',     icon:'₿',  decimals:2,  minQty:0.0001 },
-  { symbol:'ETHUSDT',  base:'ETH',  label:'Ethereum',    icon:'Ξ',  decimals:2,  minQty:0.001  },
+  // ── TOP PICKS (Config C best performers — backtest verified) ────
+  { symbol:'AVAXUSDT', base:'AVAX', label:'Avalanche',   icon:'🔺', decimals:3,  minQty:0.01   },
+  { symbol:'ADAUSDT',  base:'ADA',  label:'Cardano',     icon:'₳',  decimals:5,  minQty:1      },
+  { symbol:'TAOUSDT',  base:'TAO',  label:'Bittensor',   icon:'τ',  decimals:2,  minQty:0.001  },
+  { symbol:'EPICUSDT', base:'EPIC', label:'EpicChain',   icon:'⚡', decimals:4,  minQty:1      },
   { symbol:'SOLUSDT',  base:'SOL',  label:'Solana',      icon:'◎',  decimals:3,  minQty:0.01   },
-  { symbol:'BNBUSDT',  base:'BNB',  label:'BNB',         icon:'⬡',  decimals:2,  minQty:0.01   },
-  { symbol:'XRPUSDT',  base:'XRP',  label:'Ripple',      icon:'✕',  decimals:4,  minQty:1      },
-  { symbol:'ADAUSDT',  base:'ADA',  label:'Cardano',     icon:'♠',  decimals:5,  minQty:1      },
-  { symbol:'DOGEUSDT', base:'DOGE', label:'Dogecoin',    icon:'Ð',  decimals:5,  minQty:10     },
-  { symbol:'AVAXUSDT', base:'AVAX', label:'Avalanche',   icon:'▲',  decimals:3,  minQty:0.01   },
-  { symbol:'DOTUSDT',  base:'DOT',  label:'Polkadot',    icon:'●',  decimals:3,  minQty:0.1    },
+  // ── SECOND TIER (profitable in C) ──────────────────────────────
+  { symbol:'DOGEUSDT', base:'DOGE', label:'Dogecoin',    icon:'Ð',  decimals:5,  minQty:1      },
+  { symbol:'BTCUSDT',  base:'BTC',  label:'Bitcoin',     icon:'₿',  decimals:2,  minQty:0.0001 },
+  { symbol:'TONUSDT',  base:'TON',  label:'Toncoin',     icon:'💎', decimals:4,  minQty:0.1    },
   { symbol:'LINKUSDT', base:'LINK', label:'Chainlink',   icon:'⬡',  decimals:3,  minQty:0.1    },
+  // ── CAUTION (weaker in backtest — monitor) ────────────────────
+  { symbol:'IOTAUSDT', base:'IOTA', label:'IOTA',        icon:'◆',  decimals:4,  minQty:1      },
+  { symbol:'AVAXUSDT', base:'AVAX', label:'Avalanche',   icon:'▲',  decimals:3,  minQty:0.01   },
+  { symbol:'ADAUSDT',  base:'ADA',  label:'Cardano',     icon:'♠',  decimals:5,  minQty:1      },
+  { symbol:'SOLUSDT',  base:'SOL',  label:'Solana',      icon:'◎',  decimals:3,  minQty:0.01   },
+  // ── ADDITIONAL COINS ────────────────────────────────────────────
+  { symbol:'POLUSDT',  base:'POL',  label:'Polygon',     icon:'⬟',  decimals:4,  minQty:1      },
+  { symbol:'TONUSDT',  base:'TON',  label:'Toncoin',     icon:'💎', decimals:4,  minQty:0.1    },
+  { symbol:'DOGEUSDT', base:'DOGE', label:'Dogecoin',    icon:'Ð',  decimals:5,  minQty:10     },
+  { symbol:'XRPUSDT',  base:'XRP',  label:'Ripple',      icon:'✕',  decimals:4,  minQty:1      },
+  { symbol:'BTCUSDT',  base:'BTC',  label:'Bitcoin',     icon:'₿',  decimals:2,  minQty:0.0001 },
+  { symbol:'BNBUSDT',  base:'BNB',  label:'BNB',         icon:'⬡',  decimals:2,  minQty:0.01   },
+  { symbol:'DOTUSDT',  base:'DOT',  label:'Polkadot',    icon:'●',  decimals:3,  minQty:0.1    },
   { symbol:'LTCUSDT',  base:'LTC',  label:'Litecoin',    icon:'Ł',  decimals:3,  minQty:0.01   },
-  { symbol:'MATICUSDT',base:'MATIC',label:'Polygon',     icon:'⬟',  decimals:4,  minQty:1      },
   { symbol:'UNIUSDT',  base:'UNI',  label:'Uniswap',     icon:'🦄', decimals:3,  minQty:0.1    },
   { symbol:'ATOMUSDT', base:'ATOM', label:'Cosmos',      icon:'⚛',  decimals:3,  minQty:0.1    },
   { symbol:'NEARUSDT', base:'NEAR', label:'NEAR',        icon:'Ν',  decimals:4,  minQty:0.1    },
   { symbol:'APTUSDT',  base:'APT',  label:'Aptos',       icon:'◈',  decimals:3,  minQty:0.1    },
   { symbol:'SUIUSDT',  base:'SUI',  label:'Sui',         icon:'💧', decimals:4,  minQty:1      },
   { symbol:'ARBUSDT',  base:'ARB',  label:'Arbitrum',    icon:'Ⓐ',  decimals:4,  minQty:1      },
-  { symbol:'OPUSDT',   base:'OP',   label:'Optimism',    icon:'⭕', decimals:4,  minQty:1      },
   { symbol:'INJUSDT',  base:'INJ',  label:'Injective',   icon:'◑',  decimals:3,  minQty:0.1    },
   { symbol:'WLDUSDT',  base:'WLD',  label:'Worldcoin',   icon:'👁',  decimals:4,  minQty:0.1    },
-  { symbol:'TONUSDT',  base:'TON',  label:'TON',         icon:'💎', decimals:4,  minQty:0.1    },
   { symbol:'TRXUSDT',  base:'TRX',  label:'TRON',        icon:'Ŧ',  decimals:5,  minQty:100    },
-  { symbol:'FILUSDT',  base:'FIL',  label:'Filecoin',    icon:'⬡',  decimals:3,  minQty:0.1    },
-  { symbol:'SANDUSDT', base:'SAND', label:'Sandbox',     icon:'⬛', decimals:4,  minQty:1      },
-  { symbol:'MANAUSDT', base:'MANA', label:'Decentraland',icon:'◇',  decimals:4,  minQty:1      },
   { symbol:'AAVEUSDT', base:'AAVE', label:'Aave',        icon:'👻', decimals:2,  minQty:0.01   },
-  { symbol:'MKRUSDT',  base:'MKR',  label:'Maker',       icon:'Ⓜ',  decimals:1,  minQty:0.001  },
   { symbol:'SHIBUSDT', base:'SHIB', label:'Shiba Inu',   icon:'🐕', decimals:8,  minQty:100000 },
   { symbol:'PEPEUSDT', base:'PEPE', label:'Pepe',        icon:'🐸', decimals:8,  minQty:1000000},
 ];
@@ -1958,20 +2180,51 @@ let ACTIVE_COIN = COIN_CATALOGUE[0];
 const STATE = {
   price:        null,
   prevPrice:    null,
-  candles:      [],
+  candles:      [],       // last 3 × 15m candles
+  candlesExt:   [],       // last 30 × 15m candles (for RSI, vol, 4h)
   borHigh:      null,
   borLow:       null,
   borMid:       null,
   priceHistory: [],
   newsActive:   false,
   lastSignal:   'wait',
+  lastTradeTime: 0,
+  balance0:     50,
   momentum:     0,
   score:        0,
   greenCount:   0,
+  rsi:          50,
+  volRatio:     1.0,
+  ema4h:        null,
+  atr14:        null,
+  candleLow:    null,     // lowest low of signal candles (for SL placement)
+  candleHigh:   null,     // highest high of signal candles (for breakout check)
+  breakoutArmed:false,    // true = waiting for price to cross candleHigh
+  regimeTrend:  true,     // true = trending market, false = ranging
+  confirmCandle:null,     // candle that triggered confirm delay
+  trailActive:  false,
+  trailSl:      null,
+  // Liquidation state
+  liqStream:    null,     // WebSocket reference for liquidation feed
+  liqEvents:    [],       // rolling window of liquidation events [{ts, side, usdVal}]
+  liqLongUSD:   0,        // total long liquidations in window ($)
+  liqShortUSD:  0,        // total short liquidations in window ($)
+  liqLastUpdate:0,        // timestamp of last liquidation event
+  liqConnected: false,    // WebSocket connection status
   dailyTrades:  0,
   sessionPnL:   0,
   tradeHistory: [],
   exchangePrices: { binance: null, okx: null, mexc: null },
+  // Multi-timeframe data for Stargate
+  candles1h:     [],      // 1h candles (aggregated)
+  candles4h:     [],      // 4h candles (aggregated)
+  stargateReady: false,   // true when enough TF data loaded
+  stargateSignal:null,    // last Stargate signal result
+  stargateUnlockAttempts:0,
+  // Live fractal state
+  fractals4h: {bullLow:null,bearHigh:null,rising:false},
+  fractals1h: {bullLow:null,bearHigh:null,rising:false},
+  fractals15m:{bullLow:null,bearHigh:null,rising:false},
 };
 
 // ─── HELPERS ──────────────────────────────────────────────────
@@ -1993,7 +2246,26 @@ function tickClock() {
 
 function isInSession(t) {
   const h=t.getHours(), m=t.getMinutes();
-  return (h===4 && m<30) || (h===16 && m<30);
+  // WINDOW 1: 4:00 AM GMT+3 — Peak (30 min)
+  if(h===4 && m<30) return true;
+  // WINDOW 2: 4:00 PM GMT+3 — Peak (30 min)
+  if(h===16 && m<30) return true;
+  // WINDOW 3: London Open 8:00-10:00 AM GMT+3 (2 hrs)
+  if(h>=8 && h<10) return true;
+  // WINDOW 4: NY Open 14:00-16:00 PM GMT+3 (2 hrs, overlaps London close)
+  if(h>=14 && h<16) return true;
+  // Asian close (1-3 AM) REMOVED — backtest: only 7 trades in 4 months,
+  // 42.9% WR but near-zero sample size. Not worth sleep-trading risk.
+  return false;
+}
+
+// Returns quality tier of current session (used for score bonus & UI)
+function sessionTier(t) {
+  const h=t.getHours(), m=t.getMinutes();
+  if((h===4&&m<30)||(h===16&&m<30))   return { tier:'PEAK',    bonus:2.5, label:'⭐ PEAK SESSION — 4AM/4PM', color:'var(--green)' };
+  if(h>=8&&h<10)                       return { tier:'PRIME',   bonus:1.5, label:'🟡 LONDON OPEN 8-10 AM',    color:'var(--yellow)' };
+  if(h>=14&&h<16)                      return { tier:'PRIME',   bonus:1.5, label:'🟡 NY OPEN 14-16 PM',       color:'var(--yellow)' };
+  return { tier:'NONE', bonus:0, label:'⬛ OFF SESSION', color:'var(--muted2)' };
 }
 
 function sessionName(t) {
@@ -2011,13 +2283,8 @@ function sessionName(t) {
 
 // Returns session bonus: +2 for peak, +1 for good, +0 for any other time
 function sessionBonus(t) {
-  const h=t.getHours(), m=t.getMinutes();
-  // Peak windows (most favoured)
-  if((h===4&&m<30)||(h===16&&m<30)) return { bonus:2, label:'⭐ PEAK SESSION', peak:true };
-  // Good opportunistic windows (London open, NY open, Asian close)
-  if((h===8&&m<60)||(h===9&&m<60)||(h===13&&m<60)||(h===14&&m<60)) return { bonus:1, label:'🟡 GOOD WINDOW', peak:false };
-  // Any other time — still tradeable if score is high
-  return { bonus:0.5, label:'⬜ ANY TIME', peak:false };
+  const st = sessionTier(t);
+  return { bonus: st.bonus, label: st.label, peak: st.tier==='PEAK', tier: st.tier };
 }
 
 function updateSessionUI(t) {
@@ -2144,28 +2411,470 @@ function updateExchangeChip(ex, price, online) {
 }
 
 // ─── CANDLES ──────────────────────────────────────────────────
+// ── LIQUIDATION ENGINE ────────────────────────────────────────────
+async function startLiquidationStream() {
+  if(STATE.liqStream){ try{ STATE.liqStream.close(); }catch(e){} }
+  try {
+    const ws = new WebSocket('wss://fstream.binance.com/ws/!forceOrder@arr');
+    ws.onopen = () => {
+      STATE.liqConnected = true;
+      log('LIQ','info','⚡ Liquidation stream connected — monitoring BTC forced orders');
+      updateLiqUI();
+    };
+    ws.onmessage = (evt) => {
+      try {
+        const msg=JSON.parse(evt.data); const data=msg.o||msg; const sym=data.s||'';
+        if(!sym.includes('BTC')) return;
+        const side=data.S; const qty=parseFloat(data.q||data.z||0); const price=parseFloat(data.p||data.ap||0);
+        const usdVal=qty*price;
+        if(usdVal<1000) return;
+        STATE.liqEvents.push({ts:Date.now(),side,usdVal,sym});
+        STATE.liqLastUpdate=Date.now();
+        pruneLiqWindow(); recalcLiqTotals(); updateLiqUI();
+        if(usdVal>=1000000){
+          const dir=side==='SELL'?'📉 LONG LIQ':'📈 SHORT LIQ';
+          log('LIQ','info',`${dir} $${(usdVal/1e6).toFixed(2)}M on ${sym}`);
+        }
+      } catch(e) {}
+    };
+    ws.onerror = () => { STATE.liqConnected=false; updateLiqUI(); };
+    ws.onclose = () => {
+      STATE.liqConnected=false; updateLiqUI();
+      setTimeout(()=>{ if(SETTINGS.filterLiq) startLiquidationStream(); },15000);
+    };
+    STATE.liqStream=ws;
+  } catch(e){ log('LIQ','warn','Liq stream error: '+e.message); }
+}
+
+function stopLiquidationStream() {
+  if(STATE.liqStream){ try{ STATE.liqStream.close(); }catch(e){} STATE.liqStream=null; }
+  STATE.liqConnected=false; updateLiqUI();
+}
+
+function pruneLiqWindow() {
+  const cutoff=Date.now()-(SETTINGS.liqWindowMs||900000);
+  STATE.liqEvents=STATE.liqEvents.filter(e=>e.ts>=cutoff);
+}
+
+function recalcLiqTotals() {
+  STATE.liqLongUSD =STATE.liqEvents.filter(e=>e.side==='SELL').reduce((a,e)=>a+e.usdVal,0);
+  STATE.liqShortUSD=STATE.liqEvents.filter(e=>e.side==='BUY' ).reduce((a,e)=>a+e.usdVal,0);
+}
+
+function getLiqSignal() {
+  pruneLiqWindow(); recalcLiqTotals();
+  const thresh=SETTINGS.liqThresholdUSD||500000;
+  const longL=STATE.liqLongUSD; const shortL=STATE.liqShortUSD; const total=longL+shortL;
+  if(total<thresh*0.1) return 'inactive';
+  const ratio=shortL/(total+1);
+  if(ratio>0.65 && shortL>=thresh) return 'bullish';
+  if(ratio<0.35 && longL >=thresh) return 'bearish';
+  return 'neutral';
+}
+
+function updateLiqUI() {
+  const dot=document.getElementById('f-liq-dot');
+  const val=document.getElementById('f-liq-val');
+  const liqS=document.getElementById('liq-stats');
+  if(!dot||!val) return;
+  const signal=getLiqSignal(); const total=STATE.liqLongUSD+STATE.liqShortUSD;
+  const thresh=SETTINGS.liqThresholdUSD||500000;
+  const fmtM=v=>v>=1e9?(v/1e9).toFixed(2)+'B':v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v.toFixed(0);
+  let status='',dotClass='idle';
+  if(!STATE.liqConnected)         { status='⚡ CONNECTING...'; dotClass='warn'; }
+  else if(signal==='inactive')    { status=`WATCHING — $${fmtM(total)} / $${fmtM(thresh)}`; dotClass='idle'; }
+  else if(signal==='bullish')     { status=`🟢 SHORT SQUEEZE $${fmtM(STATE.liqShortUSD)} — BUY ✅`; dotClass='pass'; }
+  else if(signal==='bearish')     { status=`🔴 LONG CASCADE $${fmtM(STATE.liqLongUSD)} — BLOCKED`; dotClass='fail'; }
+  else                            { status=`⚪ MIXED L:$${fmtM(longL)} S:$${fmtM(STATE.liqShortUSD)}`; dotClass='warn'; }
+  val.textContent=status;
+  dot.className='filter-dot filter-'+dotClass;
+  if(liqS) liqS.innerHTML=`<span style="color:var(--green)">▲$${fmtM(STATE.liqShortUSD)}</span> <span style="color:var(--muted2)">|</span> <span style="color:var(--red)">▼$${fmtM(STATE.liqLongUSD)}</span>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ⭐ STARGATE — AXMED DHALAC STRATEGY
+// Multi-Timeframe 5-Layer Signal Engine
+// Access requires writing: AXMED DHALAC STRATEGY
+// ═══════════════════════════════════════════════════════════════
+
+// Stargate toggle — protected panel, no public sharing
+const STARGATE_HASH = '5f1a2b3c4d'; // validation token
+
+function stargateUnlock() {
+  SETTINGS.stargateUnlocked = true;
+  SETTINGS.stargateMode     = true;
+  log('STARGATE','info','⭐ STARGATE activated — Multi-TF 5-layer signal engine online');
+  document.getElementById('sg-lock').style.display='none';
+  document.getElementById('sg-panel').style.display='block';
+  fetchStargateTF();
+  return true;
+}
+
+async function fetchStargateTF() {
+  // Fetch 1h and 4h candles for Stargate multi-TF analysis
+  try {
+    const sym = ACTIVE_COIN.symbol;
+    const [r1h, r4h] = await Promise.all([
+      fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=1h&limit=36`),
+      fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=4h&limit=64`)
+    ]);
+    const d1h = await r1h.json();
+    const d4h = await r4h.json();
+
+    const parse = arr => arr.map(k => ({
+      o:parseFloat(k[1]),h:parseFloat(k[2]),l:parseFloat(k[3]),c:parseFloat(k[4]),
+      v:parseFloat(k[5]),green:parseFloat(k[4])>parseFloat(k[1]),
+      body:Math.abs(parseFloat(k[4])-parseFloat(k[1]))/((parseFloat(k[2])-parseFloat(k[3]))||0.0001)
+    }));
+
+    STATE.candles1h = parse(d1h).slice(0,-1);  // exclude forming
+    STATE.candles4h = parse(d4h).slice(0,-1);
+    STATE.stargateReady = STATE.candles1h.length >= 28 && STATE.candles4h.length >= 56;
+    if(STATE.stargateReady) updateFractals();  // compute fractals after TF fetch
+  } catch(e) {
+    log('STARGATE','warn','TF fetch failed: '+e.message);
+  }
+}
+
+function emaCalc(prices, period) {
+  if(!prices||prices.length<period) return prices?.[prices.length-1]||0;
+  const k=2/(period+1); let e=prices.slice(0,period).reduce((a,v)=>a+v,0)/period;
+  for(let i=period;i<prices.length;i++) e=prices[i]*k+e*(1-k);
+  return e;
+}
+
+function vwapCalc(cans, n=20) {
+  if(!cans||cans.length<n) return cans?.[cans.length-1]?.c||0;
+  const r=cans.slice(-n);
+  const pv=r.reduce((a,c)=>a+((c.h+c.l+c.c)/3)*c.v,0);
+  const tv=r.reduce((a,c)=>a+c.v,0);
+  return tv>0?pv/tv:r[r.length-1].c;
+}
+
+function rsiCalc(closes, period=14) {
+  if(!closes||closes.length<period+2) return 50;
+  let g=0,l=0;
+  for(let i=1;i<=period;i++){const d=closes[closes.length-period-1+i]-closes[closes.length-period-1+i-1];d>0?g+=d:l-=d;}
+  let ag=g/period,al=l/period;
+  for(let i=closes.length-period;i<closes.length;i++){const d=closes[i]-closes[i-1];ag=(ag*(period-1)+(d>0?d:0))/period;al=(al*(period-1)+(d<0?-d:0))/period;}
+  return al===0?100:100-100/(1+ag/al);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FRACTAL ENGINE — Bill Williams 5-bar fractal detector
+// Bullish fractal: bar[i].low is lowest of 5 consecutive bars
+// Bearish fractal: bar[i].high is highest of 5 consecutive bars
+// Confirmed = 2 bars have CLOSED after the fractal bar
+// ═══════════════════════════════════════════════════════════════
+function findFractals(candles, lookback=30) {
+  if(!candles||candles.length<6) return {bullLow:null,bearHigh:null,rising:false};
+  // Exclude last 2 bars (not yet confirmed — need 2 bars to confirm)
+  const window=candles.slice(-(lookback+4),-2);
+  let lastBullLow=null, prevBullLow=null;
+  let lastBearHigh=null;
+
+  for(let i=2;i<window.length-2;i++){
+    const c=window[i];
+    // Bullish fractal: lowest low (2 higher lows on each side)
+    if(c.l<window[i-1].l && c.l<window[i-2].l && c.l<window[i+1].l && c.l<window[i+2].l){
+      prevBullLow=lastBullLow; lastBullLow=c.l;
+    }
+    // Bearish fractal: highest high (2 lower highs on each side)
+    if(c.h>window[i-1].h && c.h>window[i-2].h && c.h>window[i+1].h && c.h>window[i+2].h){
+      lastBearHigh=c.h;
+    }
+  }
+  const rising=(prevBullLow!==null && lastBullLow!==null && lastBullLow>prevBullLow*1.003);
+  return {bullLow:lastBullLow, prevBullLow, bearHigh:lastBearHigh, rising};
+}
+
+function updateFractals() {
+  if(!STATE.candles4h||!STATE.candles1h||!STATE.candlesExt) return;
+  STATE.fractals4h  = findFractals(STATE.candles4h, 60);
+  STATE.fractals1h  = findFractals(STATE.candles1h, 36);
+  STATE.fractals15m = findFractals(STATE.candlesExt, 30);
+}
+
+function runStargateSignal() {
+  if(!STATE.stargateReady||!STATE.price) return null;
+
+  const price = STATE.price;
+  const h4    = STATE.candles4h;
+  const h1    = STATE.candles1h;
+  const m15   = STATE.candlesExt;  // already have this
+
+  if(h4.length<56||h1.length<28||m15.length<30) return null;
+
+  const h4cl = h4.map(c=>c.c); const h4vl = h4.map(c=>c.v);
+  const h1cl = h1.map(c=>c.c); const h1vl = h1.map(c=>c.v);
+  const m15vl= m15.map(c=>c.vol||c.v||0);
+
+  // ── LAYER 1: 4h TREND ─────────────────────────────────────
+  const ema21_4h = emaCalc(h4cl,21);
+  const ema55_4h = emaCalc(h4cl,55);
+  const ema8_4h  = emaCalc(h4cl,8);
+  const rsi_4h   = rsiCalc(h4cl);
+  const spread4h = (ema21_4h-ema55_4h)/ema55_4h*100;
+  const vwap_4h  = vwapCalc(h4,20);
+
+  // L1 with Fractal: 4h bullish fractal sequence rising = confirmed uptrend structure
+  updateFractals();
+  const f4h=STATE.fractals4h; const f1h=STATE.fractals1h; const f15=STATE.fractals15m;
+
+  const l1 = (ema21_4h > ema55_4h &&
+              spread4h > 0.12 &&
+              rsi_4h >= 44 && rsi_4h <= 72 &&
+              price > ema21_4h * 0.997 &&
+              h4[h4.length-1].green &&
+              (f4h.rising || (f4h.bullLow && price > f4h.bullLow * 0.995)));
+
+  // ── LAYER 2: 1h MOMENTUM ──────────────────────────────────
+  const gc4    = h1.slice(-4).filter(c=>c.green).length;
+  const rsi_1h = rsiCalc(h1cl);
+  const ema12  = emaCalc(h1cl,12);
+  const ema26  = emaCalc(h1cl,26);
+  const macd   = ema12-ema26;
+  const ema21_1h = emaCalc(h1cl,21);
+
+  const l2 = (gc4 >= 3 && macd > 0 && rsi_1h >= 46 && rsi_1h <= 72);
+
+  // ── LAYER 3: MICROSTRUCTURE ───────────────────────────────
+  const liqSig = getLiqSignal();  // already built
+  const l3_liq = (liqSig==='bullish'||liqSig==='inactive'||liqSig==='neutral');
+  const l3 = l3_liq;  // funding rate: use liq as proxy
+
+  // ── LAYER 4: 15m PRECISION ENTRY ─────────────────────────
+  const pctFromEma = (price-ema21_1h)/ema21_1h*100;
+  const nearSupport = pctFromEma >= -1.5 && pctFromEma <= 2.0;
+
+  const c1 = m15[m15.length-1];
+  const c2 = m15[m15.length-2];
+  const c3 = m15[m15.length-3];
+  if(!c1||!c2||!c3) return null;
+
+  const vol_avg = m15vl.slice(-9,-2).reduce((a,v)=>a+v,0)/7||1;
+  const volSpike = (c1.vol||c1.v||0) > vol_avg * 1.4;
+  const twoGreen = c1.green && c2.green;
+  const goodBody = (c1.pct||0) > 0 && c1.body > 0.42;
+  const breakoutOk = price >= (c3.high||c3.h||price) * 0.9995;
+
+  // L4 FRACTAL BREAKOUT: price breaks above last confirmed bearish fractal
+  // This is the key: instead of just checking candle high, we check a CONFIRMED swing high
+  const fracBreakout = f15.bearHigh && price > f15.bearHigh * 0.9998;
+  const frac15Rising  = f15.rising;  // 15m higher lows = momentum building
+  const nearFracSupport = f1h.bullLow
+    ? (price - f1h.bullLow) / f1h.bullLow * 100 >= 0 &&
+      (price - f1h.bullLow) / f1h.bullLow * 100 <= 2.5
+    : nearSupport;
+
+  const l4 = (fracBreakout || (nearFracSupport && breakoutOk)) &&
+              volSpike && twoGreen && goodBody;
+
+  // ── LAYER 5: RISK GATE ────────────────────────────────────
+  const t = gmt3();
+  const h_=t.getHours(), m_=t.getMinutes();
+  const inSess = (h_===4&&m_<30)||(h_===16&&m_<30)||(h_>=8&&h_<10)||(h_>=14&&h_<16);
+
+  // FRACTAL SL: below last confirmed 1h bullish fractal (real support level)
+  // This replaces arbitrary candle low — fractal low = price was REJECTED here
+  let sl;
+  if(f1h.bullLow && f1h.bullLow < price && f1h.bullLow > price*0.97) {
+    sl = f1h.bullLow * 0.9985;  // 0.15% below proven 1h fractal support
+  } else if(f15.bullLow && f15.bullLow < price) {
+    sl = f15.bullLow * 0.9988;  // fallback: 15m fractal support
+  } else {
+    const pullbackLow = Math.min(c3.low||c3.l||price, c2.low||c2.l||price);
+    sl = pullbackLow * 0.9990;  // final fallback
+  }
+  const slDist = price - sl;
+  const slPct = slDist/price;
+
+  const l5 = inSess && slPct > 0 && slPct < 0.030;
+
+  // ── RESULT ────────────────────────────────────────────────
+  const allPass = l1 && l2 && l3 && l4 && l5;
+  const passCount = [l1,l2,l3,l4,l5].filter(Boolean).length;
+
+  const tp1 = price + slDist * SETTINGS.stargateTP1R;
+  const tp2 = price + slDist * SETTINGS.stargateTP2R;
+
+  return {
+    fire:     allPass,
+    passCount,
+    layers:   {l1,l2,l3,l4,l5},
+    sl, tp1, tp2,
+    details: {
+      '4h_ema':   `EMA21>EMA55 ${l1?'✅':'❌'} | Frac ${f4h.rising?'↑rising':'—'}`,
+      '4h_rsi':   `RSI4h=${rsi_4h.toFixed(1)}`,
+      '1h_green': `${gc4}/4 green ${l2?'✅':'❌'}`,
+      '15m_frac': `BearFrac=${f15.bearHigh?'✅ broken':'❌ not broken'} | 15mHL:${f15.rising?'↑':'—'}`,
+      'sl_type':  f1h.bullLow?'Fractal 1h SL':'Candle low SL',
+      'vol':      `${((c1.vol||c1.v||0)/vol_avg).toFixed(2)}x avg`,
+    }
+  };
+}
+
+function updateStargateUI() {
+  if(!SETTINGS.stargateMode||!SETTINGS.stargateUnlocked) return;
+  const sig = runStargateSignal();
+  STATE.stargateSignal = sig;
+  if(!sig) return;
+
+  const el = document.getElementById('sg-signal');
+  const bar = document.getElementById('sg-layers');
+  if(!el||!bar) return;
+
+  const layers=['4h+Frac Trend','1h Momentum','Liquidity','15m Frac Breakout','Vol+Candle'];
+  bar.innerHTML = layers.map((l,i)=>`
+    <span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.7rem;margin:2px;
+      background:${sig.layers[`l${i+1}`]?'rgba(0,255,136,0.15)':'rgba(255,45,85,0.15)'};
+      color:${sig.layers[`l${i+1}`]?'var(--green)':'var(--red)'};
+      border:1px solid ${sig.layers[`l${i+1}`]?'var(--green2)':'var(--red2)'}">
+      ${sig.layers[`l${i+1}`]?'✅':'❌'} ${l}</span>`).join('');
+
+  // Update fractal display
+  const fd=document.getElementById('sg-fractal-display');
+  const f4el=document.getElementById('sg-frac-4h');
+  const f1el=document.getElementById('sg-frac-1h');
+  const f15el=document.getElementById('sg-frac-15m');
+  if(fd && SETTINGS.stargateUnlocked){
+    fd.style.display='block';
+    if(f4el) f4el.textContent=`4h Bull: ${STATE.fractals4h.bullLow?fmt$(STATE.fractals4h.bullLow):' — '} ${STATE.fractals4h.rising?'↑rising':''}`;
+    if(f1el) f1el.textContent=`1h Bull (SL): ${STATE.fractals1h.bullLow?fmt$(STATE.fractals1h.bullLow):' — '}`;
+    if(f15el) f15el.textContent=`15m Bear (breakout): ${STATE.fractals15m.bearHigh?fmt$(STATE.fractals15m.bearHigh):' — '} ${sig?.layers?.l4?'✅ BROKEN':'waiting'}`;
+  }
+
+  if(sig.fire) {
+    el.textContent = '⭐ STARGATE+FRACTAL ENTRY CONFIRMED';
+    el.style.color = 'var(--green)';
+    log('STARGATE','buy',`⭐ 5/5 layers aligned — SL:${fmt$(sig.sl)} TP1:${fmt$(sig.tp1)} TP2:${fmt$(sig.tp2)}`);
+    if(isCooldownOk()) autoFireTrades('buy');
+  } else {
+    el.textContent = `${sig.passCount}/5 layers — waiting...`;
+    el.style.color = sig.passCount>=3?'var(--yellow)':'var(--muted2)';
+  }
+}
+
 async function fetchCandles() {
   try {
-    const r = await fetch('https://api.binance.com/api/v3/klines?symbol='+ACTIVE_COIN.symbol+'&interval=15m&limit=4');
+    // Fetch 32 candles: 3 for signal + 29 for RSI/Vol/4h indicators
+    const r = await fetch('https://api.binance.com/api/v3/klines?symbol='+ACTIVE_COIN.symbol+'&interval=15m&limit=32');
     const d = await r.json();
-    STATE.candles = d.slice(0,3).map(c=>({
+
+    const allCandles = d.map(c=>({
       open:  parseFloat(c[1]),
       high:  parseFloat(c[2]),
       low:   parseFloat(c[3]),
       close: parseFloat(c[4]),
+      vol:   parseFloat(c[5]),
       green: parseFloat(c[4])>parseFloat(c[1]),
       pct:   (parseFloat(c[4])-parseFloat(c[1]))/parseFloat(c[1])*100,
       range: parseFloat(c[2])-parseFloat(c[3]),
     }));
 
+    // Last 3 closed candles for signal (exclude current forming candle)
+    STATE.candles    = allCandles.slice(-4,-1);
+    // Full extended history for indicators
+    STATE.candlesExt = allCandles.slice(0,-1);
+
     STATE.borHigh = Math.max(...STATE.candles.map(c=>c.high));
     STATE.borLow  = Math.min(...STATE.candles.map(c=>c.low));
     STATE.borMid  = (STATE.borHigh+STATE.borLow)/2;
+
+    // ── Compute enhanced indicators ──
+    calcIndicators();
+
+    // ── Stargate: update multi-TF + run signal ──
+    if(SETTINGS.stargateMode && SETTINGS.stargateUnlocked) {
+      updateStargateUI();
+    }
 
     renderCandles();
     updateBOR();
     evaluate();
   } catch(e) { log('ERR','warn','Candle fetch failed'); }
+}
+
+// ── INDICATOR ENGINE ─────────────────────────────────────────────
+function calcEMA(closes, period) {
+  if(closes.length < period) return closes[closes.length-1] || 0;
+  const k = 2/(period+1);
+  let e = closes.slice(0,period).reduce((a,v)=>a+v,0)/period;
+  for(let i=period; i<closes.length; i++) e = closes[i]*k + e*(1-k);
+  return e;
+}
+
+function calcRSI(closes, period=14) {
+  if(closes.length < period+2) return 50;
+  let gains=0, losses=0;
+  for(let i=1; i<=period; i++){
+    const d = closes[closes.length-period-1+i] - closes[closes.length-period-1+i-1];
+    if(d>0) gains+=d; else losses-=d;
+  }
+  let ag=gains/period, al=losses/period;
+  for(let i=closes.length-period; i<closes.length; i++){
+    const d = closes[i]-closes[i-1];
+    ag=(ag*(period-1)+(d>0?d:0))/period;
+    al=(al*(period-1)+(d<0?-d:0))/period;
+  }
+  return al===0 ? 100 : 100-100/(1+ag/al);
+}
+
+function calcIndicators() {
+  const ext = STATE.candlesExt;
+  if(!ext || ext.length < 16) return;
+
+  const closes = ext.map(c=>c.close);
+  const highs  = ext.map(c=>c.high  || c.close);
+  const lows   = ext.map(c=>c.low   || c.close);
+  const vols   = ext.map(c=>c.vol   || 0);
+
+  // RSI(14)
+  STATE.rsi = calcRSI(closes, 14);
+
+  // Volume ratio
+  const vol7avg = vols.slice(-8,-1).reduce((a,v)=>a+v,0)/7;
+  STATE.volRatio = vol7avg > 0 ? (vols[vols.length-1]/vol7avg) : 1;
+
+  // 4h EMA
+  STATE.ema4h = calcEMA(closes, 16);
+
+  // ATR(14) — Average True Range: measures actual candle volatility
+  // Used for dynamic SL sizing (replaces fixed %)
+  if(ext.length >= 15) {
+    let atrSum = 0;
+    for(let i = ext.length-14; i < ext.length; i++) {
+      const h  = highs[i], l = lows[i], pc = closes[i-1];
+      const tr = Math.max(h-l, Math.abs(h-pc), Math.abs(l-pc));
+      atrSum  += tr;
+    }
+    STATE.atr14 = atrSum / 14;
+  }
+
+  // Signal candle high/low — used for breakout entry + SL below low
+  if(STATE.candles && STATE.candles.length >= 2) {
+    STATE.candleHigh = Math.max(...STATE.candles.map(c => c.high || c.close));
+    STATE.candleLow  = Math.min(...STATE.candles.map(c => c.low  || c.close));
+  }
+
+  // Market Regime: compare 20-candle range to ATR
+  // Trending = range > atrRegimeMult × ATR → good to trade
+  // Ranging  = range ≤ atrRegimeMult × ATR → skip (choppy)
+  if(ext.length >= 20 && STATE.atr14) {
+    const last20H = Math.max(...highs.slice(-20));
+    const last20L = Math.min(...lows.slice(-20));
+    const range20 = last20H - last20L;
+    const thresh  = STATE.atr14 * (SETTINGS.atrRegimeMult || 1.2);
+    STATE.regimeTrend = range20 > thresh;
+  }
+
+  // Update filter UI
+  const rsiEl = document.getElementById('f-rsi-val');
+  const volEl = document.getElementById('f-vol-val');
+  const trendEl = document.getElementById('f-4h-val');
+  if(rsiEl) rsiEl.textContent = STATE.rsi.toFixed(1);
+  if(volEl) volEl.textContent = STATE.volRatio.toFixed(2)+'×';
+  if(trendEl) trendEl.textContent = STATE.ema4h ? (STATE.price > STATE.ema4h ? '▲ ABOVE 4H' : '▼ BELOW 4H') : '—';
 }
 
 function renderCandles() {
@@ -2252,24 +2961,27 @@ function calculateTrade() {
   }
 
   let sl, tp1, tp2, slDistAbs, dir;
-  if(sig==='buy'){
+  // SPOT ONLY: treat 'sell' signal as neutral (wait), only show BUY levels
+  const spotSig = (SETTINGS.spotOnly && sig==='sell') ? 'wait' : sig;
+  if(spotSig==='buy'){
     sl     = p*(1-slDist);
     slDistAbs = p-sl;
     tp1    = p+slDistAbs*SETTINGS.tp1R;
     tp2    = p+slDistAbs*SETTINGS.tp2R;
-    dir    = '▲ LONG';
+    dir    = '▲ LONG (SPOT BUY)';
     document.getElementById('kv-dir').style.color='var(--green)';
   } else {
     sl     = p*(1+slDist);
     slDistAbs = sl-p;
     tp1    = p-slDistAbs*SETTINGS.tp1R;
     tp2    = p-slDistAbs*SETTINGS.tp2R;
-    dir    = '▼ SHORT';
-    document.getElementById('kv-dir').style.color='var(--red)';
+    dir    = '⏸ WAITING (SPOT ONLY)';
+    document.getElementById('kv-dir').style.color='var(--muted2)';
   }
 
-  // Position sizing: risk amount / SL distance in %
-  const positionUSDT = riskAmt / slDist * 100;
+  // ALL-IN: position = maxPosPct% of current balance
+  const maxPosPct    = SETTINGS.maxPosPct || 100;
+  const positionUSDT = Math.max(balance * (maxPosPct / 100), SETTINGS.minNotional || 10);
   const positionBTC  = positionUSDT / p;
   const maxLoss      = riskAmt;
   const profitTP1    = positionBTC * Math.abs(tp1-p);
@@ -2315,23 +3027,25 @@ function evaluate() {
 
   let score=0;
 
-  // F1: session
-  if(inSess) score+=2;
-  setFilter('f-session',inSess?'pass':'fail',inSess?sessionName(t):'OFF-SESSION');
+  // F1: session — tiered bonus
+  const tier = sessionTier(t);
+  if(inSess) score += tier.bonus;
+  setFilter('f-session',inSess?'pass':'fail', inSess ? tier.label : 'OFF-SESSION');
 
   // F2: 2/3 green
   if(gc>=2) score+=2;
   setFilter('f-candle',gc>=2?'pass':'fail',`${gc}/3`);
 
-  // F3: BOR breakout
-  let borPass=false,borLbl='—';
+  // F3: BOR context (display only — no score bonus per backtest finding)
+  // Backtest showed BOR score had zero correlation with win rate
+  let borLbl='—';
   if(STATE.borHigh&&STATE.borLow){
-    if(p>STATE.borHigh){borPass=true;borLbl='▲ HIGH BREAK';score+=1.5;}
-    else if(p<STATE.borLow){borPass=true;borLbl='▼ LOW BREAK';score+=1.5;}
-    else if(p>STATE.borMid){borLbl='UPPER ZONE';score+=0.5;}
-    else borLbl='LOWER ZONE';
+    if(p>STATE.borHigh)      borLbl='▲ HIGH BREAK';
+    else if(p<STATE.borLow)  borLbl='▼ LOW BREAK';
+    else if(p>STATE.borMid)  borLbl='UPPER ZONE';
+    else                     borLbl='LOWER ZONE';
   }
-  setFilter('f-bor',borPass?'pass':STATE.borHigh?'warn':'idle',borLbl);
+  setFilter('f-bor','idle',borLbl);
 
   // F4: momentum alignment
   const bullDir = gc>=2&&c[2]&&c[2].green;
@@ -2366,6 +3080,92 @@ function evaluate() {
   setFilter('f-maxtr',limitOk?'pass':'fail',`${STATE.dailyTrades}/${SETTINGS.maxTrades}`);
   if(!limitOk) score-=10;
 
+  // ── ENHANCED FILTERS ─────────────────────────────────────────────
+
+  const isHighVolCoin = (SETTINGS.highVolCoins||[]).includes(ACTIVE_COIN.base);
+
+  // F9: Volume SPIKE — raised to 1.5× (was 1.1×)
+  // Data: low-vol entries 30% WR, high-vol entries 55%+ WR
+  const volMin = SETTINGS.volSpikeMin || 1.5;
+  const volThreshold = isHighVolCoin ? volMin * 0.8 : volMin;
+  const volOk = !SETTINGS.filterVol || STATE.volRatio >= volThreshold;
+  setFilter('f-vol', volOk?'pass':'warn', `${STATE.volRatio.toFixed(2)}× (need ${volThreshold.toFixed(1)}×)`);
+
+  // F10: RSI Zone
+  const rsiLo = isHighVolCoin ? 38 : 42;
+  const rsiHi = isHighVolCoin ? 74 : 70;
+  const rsiOk = !SETTINGS.filterRSI || (STATE.rsi >= rsiLo && STATE.rsi <= rsiHi);
+  setFilter('f-rsi', rsiOk?'pass':(STATE.rsi>rsiHi?'fail':'warn'),
+    `${STATE.rsi.toFixed(1)} (${STATE.rsi>rsiHi?'OB':STATE.rsi<rsiLo?'OS':'OK'})`);
+
+  // F11: 4h Trend (steady coins only)
+  const apply4h   = SETTINGS.filter4h && !isHighVolCoin && STATE.ema4h;
+  const trend4hOk = !apply4h || (p >= STATE.ema4h * 0.997);
+  setFilter('f-4h', trend4hOk?'pass':'fail',
+    STATE.ema4h ? (p>=STATE.ema4h*0.997?'▲ ALIGNED':'▼ BELOW 4H') : 'N/A');
+
+  // F12: Market Regime — NEW
+  // Feb-Mar: 28% WR because market was ranging. Only trade trending markets.
+  const regimeOk = !SETTINGS.filterRegime || STATE.regimeTrend;
+  setFilter('f-regime', regimeOk?'pass':'warn',
+    STATE.regimeTrend ? '📈 TRENDING' : '↔ RANGING — skip');
+
+  // F13.5: BREAKOUT CONFIRMATION — FIX 1 (biggest WR fix)
+  // 675 SL hits (53.8%) happened <30min = price reversed immediately after entry
+  // Root cause: entry fires ON the signal candle while it is still forming
+  // Fix: only enter when price EXCEEDS the signal candle high (breakout confirmed)
+  const breakoutOk = !SETTINGS.requireBreakout || !STATE.candleHigh ||
+                     (p >= STATE.candleHigh * 0.9995);  // 0.05% tolerance
+  setFilter('f-breakout', breakoutOk?'pass':'warn',
+    STATE.candleHigh
+      ? (breakoutOk ? `✅ ${fmt$(p)} > ${fmt$(STATE.candleHigh)}` : `⏳ Need ${fmt$(STATE.candleHigh)}`)
+      : 'ARMED');
+
+  // F13: Liquidation Filter — NEW (MoonDev-inspired signal)
+  // BTC liquidation cascades are the most reliable directional predictor.
+  // Short liquidations = bullish (confirms BUY). Long cascades = bearish (block BUY).
+  // Source: Binance Futures real-time WebSocket feed.
+  const liqSignal = getLiqSignal();
+  const liqOk     = !SETTINGS.filterLiq ||
+                    liqSignal === 'inactive' ||   // no data yet = don't block
+                    liqSignal === 'neutral'  ||   // mixed = allow
+                    liqSignal === 'bullish';       // short squeeze = strong BUY confirm
+  const liqBlocked = SETTINGS.filterLiq && SETTINGS.liqDirectional && liqSignal === 'bearish';
+
+  let liqLabel = '';
+  if(!STATE.liqConnected)        liqLabel = '⚡ STREAM OFF';
+  else if(liqSignal==='inactive')liqLabel = `WATCHING $${((STATE.liqLongUSD+STATE.liqShortUSD)/1e6).toFixed(1)}M`;
+  else if(liqSignal==='bullish') liqLabel = `🟢 SHORT SQUEEZE — BUY ✅`;
+  else if(liqSignal==='bearish') liqLabel = `🔴 LONG CASCADE — BLOCKED`;
+  else                           liqLabel = `⚪ MIXED ${((STATE.liqLongUSD+STATE.liqShortUSD)/1e6).toFixed(1)}M`;
+
+  setFilter('f-liq', liqBlocked?'fail':(liqSignal==='bullish'?'pass':'idle'), liqLabel);
+
+  // Score bonus: bullish liquidation = strong confirmation
+  if(liqSignal === 'bullish' && STATE.liqShortUSD >= (SETTINGS.liqThresholdUSD||500000)) {
+    score = Math.min(10, score + 1.0);  // +1.0 score for confirmed short squeeze
+  }
+  STATE.score = score;
+  updateScoreRing(score);
+
+  // MANDATORY FILTER GATE — all 3 must pass (hard block, not score penalty)
+  // Backtest: replacing soft penalties with hard gate improved consistency
+  const mandatoryFail = SETTINGS.mandatoryFilters && (!volOk || !rsiOk || !trend4hOk || !regimeOk || liqBlocked || !breakoutOk);
+  if(mandatoryFail) {
+    const failReasons = [!volOk?'VolSpike':null,!rsiOk?'RSI':null,!trend4hOk?'4h':null,!regimeOk?'Regime':null,liqBlocked?'LiqCascade':null,!breakoutOk?'NoBreakout':null].filter(Boolean).join('+');
+    setSignal('✕','FILTER',`${failReasons} filter blocked — no entry`,'s-skip');
+    if(STATE.lastSignal!=='filter'){ log('FILTER','warn',`Mandatory filters failed: ${failReasons}`); STATE.lastSignal='filter'; }
+    calculateTrade();
+    return;
+  }
+
+  // Weekday filter — Mon/Tue 29-32% WR vs Fri/Sat 40%
+  // Raise required score on worst days of the week
+  const dow = t.getDay(); // 0=Sun, 1=Mon, 2=Tue
+  const isWeakDay = SETTINGS.filterWeekday && (dow===1 || dow===2);
+  const reqScore  = isWeakDay ? (SETTINGS.weekdayMinScore||8.0) : SETTINGS.minScore;
+  const dayLabel  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][dow];
+
   score=Math.max(0,Math.min(10,score));
   STATE.score=score;
   updateScoreRing(score);
@@ -2382,24 +3182,42 @@ function evaluate() {
     setSignal('🔒','LIMIT','Daily trade limit reached','s-skip');
     STATE.lastSignal='skip';
   } else if(!inSess) {
-    setSignal('◈','WAIT','Monitoring 4AM / 4PM sessions…','s-wait');
+    // Show next session countdown
+    const nextMsg = nextSessionIn(gmt3());
+    setSignal('◈','WAIT', nextMsg, 's-wait');
     STATE.lastSignal='wait';
+  } else if(score < reqScore) {
+    setSignal('◈','LOW',`Score ${score.toFixed(1)}/10 — need ${reqScore}+ (${isWeakDay?dayLabel+' weak day: 8.0+ req':SETTINGS.minScore+' threshold'})`, 's-wait');
+    if(STATE.lastSignal!=='low'){ log('SKIP','skip',`Score ${score.toFixed(1)} below ${reqScore} (${dayLabel}) — skipped`); STATE.lastSignal='low'; }
   } else if(gc<2) {
     setSignal('✕','SKIP',`Only ${gc}/3 green candles`,'s-skip');
     if(STATE.lastSignal!=='skip'){log('SKIP','skip',`Only ${gc}/3 green — no entry`);STATE.lastSignal='skip';}
   } else if(c[2]&&c[2].green) {
-    setSignal('▲','BUY','2+ green · long entry confirmed','s-buy');
+    const coolOk = isCooldownOk();
+    const subLabel = coolOk
+      ? `Score ${score.toFixed(1)}/10 · ${gc}/3 green · ${tier.label}`
+      : `Score ${score.toFixed(1)} — cooldown ${cooldownRemaining()} min`;
+    // Candle confirmation delay — backtest: 826 trades lost in <60min (19.2% WR)
+    // Wait 1 full candle after signal before firing — confirms move isn't noise
+    const confirmOk = !SETTINGS.confirmDelay || isConfirmReady(STATE.candles[2]);
+    const confirmMsg = confirmOk ? '' : ' · awaiting confirm candle';
+    setSignal('▲','BUY', subLabel+confirmMsg, 's-buy');
     if(STATE.lastSignal!=='buy'){
-      log('BUY','buy',`Long · score ${score.toFixed(1)}/10 · ${gc}/3 green`);
+      log('BUY','buy',`Long · score ${score.toFixed(1)}/10 · ${tier.label} · ${gc}/3 green`);
       STATE.lastSignal='buy';
-      autoFireTrades('buy');
+      if(coolOk && confirmOk) autoFireTrades('buy');
+      else if(!confirmOk) {
+        STATE.confirmCandle = STATE.candles[2];
+        log('CONFIRM','info','Confirm delay active — waiting for next candle to validate move');
+      }
+      else log('COOL','warn',`Cooldown — ${cooldownRemaining()} min`);
     }
   } else {
-    setSignal('▼','SELL','Reversal detected · short entry','s-sell');
+    // SPOT ONLY — bearish candle = WAIT for next BUY setup, never short
+    setSignal('◈','WAIT','Bearish candle — waiting for BUY setup · SPOT only','s-wait');
     if(STATE.lastSignal!=='sell'){
-      log('SELL','sell',`Short · score ${score.toFixed(1)}/10 · last candle reversal`);
+      log('SPOT','info','Bearish reversal detected — SKIPPED (spot-only, no shorting)');
       STATE.lastSignal='sell';
-      autoFireTrades('sell');
     }
   }
 
@@ -2433,16 +3251,96 @@ function updateScoreRing(score){
 
 // ─── TRADE EXECUTION ──────────────────────────────────────────
 async function autoFireTrades(direction){
-  const inSess = isInSession(gmt3());
-  if(!inSess||STATE.newsActive||STATE.dailyTrades>=SETTINGS.maxTrades) return;
-  for(const [name,ex] of Object.entries(EXCHANGES)){
-    if(ex.enabled) await placeOrder(name, direction);
+  const t = gmt3();
+  const inSess = isInSession(t);
+  if(!inSess)                                    { log('SKIP','skip','Not in session — skipped'); return; }
+  if(STATE.newsActive)                           { log('SKIP','skip','News active — skipped'); return; }
+  if(STATE.dailyTrades>=SETTINGS.maxTrades)      { log('LIMIT','warn','Daily limit reached'); return; }
+  if(STATE.score < SETTINGS.minScore)            { log('SKIP','skip',`Score ${STATE.score.toFixed(1)} below min ${SETTINGS.minScore}`); return; }
+  if(!isCooldownOk())                            { log('COOL','warn',`Cooldown — ${cooldownRemaining()} min remaining`); return; }
+
+  // Check if balance is enough for minimum order
+  const minPos = SETTINGS.minNotional || 10;
+  const maxPos = SETTINGS.balance * ((SETTINGS.maxPosPct||40)/100);
+  if(maxPos < minPos) {
+    log('LIMIT','warn',`Balance $${SETTINGS.balance} too low for min order $${minPos} — check settings`);
+    return;
   }
+
+  // SPOT ONLY: never auto-fire a SELL (short) order
+  if(SETTINGS.spotOnly && direction.toUpperCase()==='SELL'){
+    log('SPOT','warn','Auto SELL blocked — spot-only mode');
+    return;
+  }
+
+  // Mark trade time BEFORE placing (prevents double-fire)
+  STATE.lastTradeTime = Date.now();
+
+  for(const [name,ex] of Object.entries(EXCHANGES)){
+    if(ex.enabled) placeOrder(name, direction);
+  }
+}
+
+// ── CONFIRM DELAY helper ─────────────────────────────────────────
+// Returns true if we have a new confirmed candle after the signal candle
+function isConfirmReady(signalCandle) {
+  if(!signalCandle || !STATE.candles[2]) return true; // no signal yet = allow
+  // Signal candle is stored; check if current candle [2] is a NEWER candle
+  return STATE.candles[2] !== signalCandle;
+}
+
+// ── TRAILING SL helper ────────────────────────────────────────────
+// Called when TP1 is hit — moves SL to break-even to lock profit
+function activateTrailingSl(entryPrice) {
+  if(!SETTINGS.trailingSl) return;
+  STATE.trailActive = true;
+  STATE.trailSl     = entryPrice; // SL = entry = break-even
+  log('TRAIL','info',`Trailing SL activated — SL moved to entry ${fmt$(entryPrice)} (break-even locked)`);
+  // Update kv-sl display
+  const slEl = document.getElementById('kv-sl');
+  if(slEl) { slEl.textContent = fmt$(entryPrice); slEl.style.color = 'var(--yellow)'; }
+}
+
+// Reset trail on trade close
+function resetTrailingSl() {
+  STATE.trailActive = false;
+  STATE.trailSl     = null;
+}
+
+// Cooldown helpers
+function isCooldownOk() {
+  if(!STATE.lastTradeTime) return true;
+  return (Date.now() - STATE.lastTradeTime) >= (SETTINGS.cooldownMins * 60 * 1000);
+}
+function cooldownRemaining() {
+  if(!STATE.lastTradeTime) return 0;
+  const elapsed = (Date.now() - STATE.lastTradeTime) / 60000;
+  return Math.max(0, SETTINGS.cooldownMins - elapsed).toFixed(0);
+}
+
+// How long until next session opens
+function nextSessionIn(t) {
+  const h = t.getHours(), m = t.getMinutes();
+  const sessions = [1, 4, 8, 14, 16]; // session start hours GMT+3
+  for(const sh of sessions) {
+    if(h < sh) {
+      const mins = (sh-h)*60 - m;
+      return `Next: ${String(sh).padStart(2,'0')}:00 GMT+3 in ${mins}min`;
+    }
+  }
+  // next day 1AM
+  const mins = (25-h)*60 - m;
+  return `Next: 01:00 GMT+3 in ${mins}min`;
 }
 
 async function executeTrade(direction){
   if(!STATE.price){log('ERR','warn','No price data — cannot execute');return;}
   if(STATE.dailyTrades>=SETTINGS.maxTrades){log('LIMIT','warn','Daily trade limit reached');return;}
+  // SPOT ONLY: block manual SELL (short) attempts
+  if(SETTINGS.spotOnly && direction.toUpperCase()==='SELL'){
+    log('SPOT','warn','SELL blocked — spot-only mode · use BUY only');
+    return;
+  }
   for(const [name,ex] of Object.entries(EXCHANGES)){
     if(ex.enabled) await placeOrder(name, direction);
   }
@@ -2452,27 +3350,59 @@ async function placeOrder(exchangeName, direction){
   const ex = EXCHANGES[exchangeName];
   if(!ex.enabled) return;
   const p   = STATE.exchangePrices[exchangeName]||STATE.price;
-  const slD = SETTINGS.slDist/100;
-  const sl  = direction==='buy' ? p*(1-slD) : p*(1+slD);
+  // SL below candle low — respects actual support level
+  // ATR×1.5 was inside normal wick = noise hits. Candle low = real support.
+  let sl;
+  if(SETTINGS.slBelowCandleLow && STATE.candleLow && direction==='buy') {
+    // SL = candle low - small buffer OR ATR×atrMult, whichever is LOWER (more protection)
+    const bufPct    = SETTINGS.slCandleBuffer || 0.001;
+    const slCandle  = STATE.candleLow * (1 - bufPct);
+    const slAtr     = SETTINGS.useAtrSl && STATE.atr14
+      ? p - STATE.atr14 * (SETTINGS.atrMult || 2.0)
+      : p * (1 - SETTINGS.slDist/100);
+    sl = Math.min(slCandle, slAtr);  // take lower = wider = more room
+  } else {
+    const slPct = SETTINGS.useAtrSl && STATE.atr14
+      ? (STATE.atr14 * (SETTINGS.atrMult||2.0)) / p
+      : SETTINGS.slDist/100;
+    sl = direction==='buy' ? p*(1-slPct) : p*(1+slPct);
+  }
   const slDist = Math.abs(p-sl);
-  const tp1 = direction==='buy' ? p+slDist*SETTINGS.tp1R : p-slDist*SETTINGS.tp1R;
-  const tp2 = direction==='buy' ? p+slDist*SETTINGS.tp2R : p-slDist*SETTINGS.tp2R;
-  const pos = (SETTINGS.balance*(SETTINGS.riskPct/100)) / (SETTINGS.slDist/100);
-  const estProfit = (pos/p)*Math.abs(tp1-p);
+  const tp1    = direction==='buy' ? p+slDist*SETTINGS.tp1R : p-slDist*SETTINGS.tp1R;
+  const tp2    = tp1;  // TP2 disabled — trailing SL handles extension
+  // ALL-IN POSITION SIZING — use maxPosPct of current balance, compounded
+  const maxPosPct = SETTINGS.maxPosPct || 100;
+  const pos       = Math.max(
+    SETTINGS.balance * (maxPosPct / 100),  // e.g. 100% of balance
+    SETTINGS.minNotional || 10             // never below Binance $10 min
+  );
+  const estProfit = (pos / p) * Math.abs(tp1 - p);
 
-  updateOrderStatus(exchangeName,'active',`${direction.toUpperCase()} @ ${fmt$(p)}`,`Est. +${fmt$(estProfit)}`);
+  // Guard: insufficient balance
+  if(SETTINGS.balance < (SETTINGS.minNotional || 10)) {
+    log(exchangeName.toUpperCase(), 'warn', `Balance $${SETTINGS.balance.toFixed(2)} below minimum — cannot trade`);
+    return;
+  }
+
+  // SPOT ONLY GUARD — never send SELL to exchange (would sell coins you don't own)
+  const safeDirection = SETTINGS.spotOnly ? 'buy' : direction;
+  if(SETTINGS.spotOnly && direction.toLowerCase()==='sell'){
+    log(exchangeName.toUpperCase(),'warn','SELL order blocked — spot only mode');
+    return;
+  }
+  updateOrderStatus(exchangeName,'active',`${safeDirection.toUpperCase()} @ ${fmt$(p)}`,`Est. +${fmt$(estProfit)}`);
 
   if(ex.key&&ex.secret){
     try {
-      const result = await sendToExchange(exchangeName,direction,p,sl,tp1,pos);
-      log(exchangeName.toUpperCase(),'trade',`${direction.toUpperCase()} order placed at ${fmt$(p)} | SL:${fmt$(sl)} | TP1:${fmt$(tp1)} | Est:+${fmt$(estProfit)}`);
+      const result = await sendToExchange(exchangeName,safeDirection,p,sl,tp1,pos);
+      log(exchangeName.toUpperCase(),'trade',`${safeDirection.toUpperCase()} order placed at ${fmt$(p)} | SL:${fmt$(sl)} | TP1:${fmt$(tp1)} | Est:+${fmt$(estProfit)}`);
     } catch(err){
       updateOrderStatus(exchangeName,'error',`Order failed: ${err.message}`,'—');
       log(exchangeName.toUpperCase(),'warn',`Order failed: ${err.message}`);
       return;
     }
   } else {
-    log(exchangeName.toUpperCase(),'trade',`[SIMULATED] ${direction.toUpperCase()} @ ${fmt$(p)} | SL:${fmt$(sl)} | TP1:${fmt$(tp1)} | TP2:${fmt$(tp2)} | Est:+${fmt$(estProfit)}`);
+    log(exchangeName.toUpperCase(),'trade',`[SIMULATED] ${safeDirection.toUpperCase()} @ ${fmt$(p)} | SL:${fmt$(sl)} | TP1:${fmt$(tp1)} | TP2:${fmt$(tp2)} | Est:+${fmt$(estProfit)}`);
   }
 
   // Record trade
@@ -2496,9 +3426,15 @@ async function placeOrder(exchangeName, direction){
   STATE.tradeHistory.unshift(trade);
   STATE.dailyTrades++;
   STATE.sessionPnL += estProfit;
-  document.getElementById('h-trades').textContent = STATE.dailyTrades;
-  document.getElementById('h-pnl').textContent = '+'+fmt$(STATE.sessionPnL);
+  STATE.lastTradeTime = Date.now();
+  document.getElementById('h-trades').textContent  = STATE.dailyTrades;
+  document.getElementById('h-pnl').textContent     = '+'+fmt$(STATE.sessionPnL);
   document.getElementById('daily-count').textContent = STATE.dailyTrades;
+
+  // ALL-IN: update running balance so next trade compounds on current balance
+  // TP1 hit → balance grows; SL hit → balance shrinks (tracked via sessionPnL)
+  SETTINGS.balance = Math.max(STATE.balance0 + STATE.sessionPnL, SETTINGS.minNotional || 10);
+  document.getElementById('set-balance').value = SETTINGS.balance.toFixed(2);
 
   addTradeRow(trade);
   if(SHEETS.connected) syncTradeToSheets(trade);
@@ -2682,7 +3618,31 @@ function saveRiskSettings(){
   SETTINGS.tp1R      = parseFloat(document.getElementById('set-tp1').value)||2;
   SETTINGS.tp2R      = parseFloat(document.getElementById('set-tp2').value)||3;
   SETTINGS.balance   = parseFloat(document.getElementById('set-balance').value)||1000;
-  SETTINGS.maxTrades = parseInt(document.getElementById('set-max-trades').value)||2;
+  SETTINGS.maxTrades    = parseInt(document.getElementById('set-max-trades-top')?.value  || document.getElementById('set-max-trades')?.value || 5);
+  SETTINGS.minScore     = parseFloat(document.getElementById('set-min-score')?.value    || 7.0);
+  SETTINGS.cooldownMins = parseInt(document.getElementById('set-cooldown')?.value       || 30);
+  SETTINGS.maxPosPct    = parseFloat(document.getElementById('set-max-pos')?.value      || 100);
+  SETTINGS.minNotional  = parseFloat(document.getElementById('set-min-notional')?.value || 10);
+  SETTINGS.filterVol        = document.getElementById('set-filter-vol')?.checked       ?? true;
+  SETTINGS.filterRSI        = document.getElementById('set-filter-rsi')?.checked       ?? true;
+  SETTINGS.filter4h         = document.getElementById('set-filter-4h')?.checked        ?? true;
+  SETTINGS.useAtrSl         = document.getElementById('set-use-atr-sl')?.checked       ?? true;
+  SETTINGS.atrMult          = parseFloat(document.getElementById('set-atr-mult')?.value || 1.5);
+  SETTINGS.confirmDelay     = document.getElementById('set-confirm-delay')?.checked    ?? true;
+  SETTINGS.filterRegime     = document.getElementById('set-filter-regime')?.checked    ?? true;
+  SETTINGS.filterWeekday    = document.getElementById('set-filter-weekday')?.checked   ?? true;
+  SETTINGS.weekdayMinScore  = parseFloat(document.getElementById('set-weekday-score')?.value || 8.0);
+  SETTINGS.trailingSl       = document.getElementById('set-trailing-sl')?.checked      ?? true;
+  SETTINGS.mandatoryFilters    = document.getElementById('set-mandatory-filters')?.checked ?? true;
+  SETTINGS.filterLiq           = document.getElementById('set-filter-liq')?.checked      ?? true;
+  SETTINGS.volSpikeMin         = parseFloat(document.getElementById('set-vol-spike')?.value  || 1.5);
+  SETTINGS.requireBreakout     = document.getElementById('set-require-breakout')?.checked     ?? true;
+  SETTINGS.slBelowCandleLow    = document.getElementById('set-sl-candle-low')?.checked        ?? true;
+  SETTINGS.liqThresholdUSD     = parseFloat(document.getElementById('set-liq-threshold')?.value || 500000);
+  SETTINGS.liqDirectional      = document.getElementById('set-liq-directional')?.checked  ?? true;
+  // Restart liquidation stream if setting changed
+  if(SETTINGS.filterLiq && !STATE.liqConnected) startLiquidationStream();
+  if(!SETTINGS.filterLiq) stopLiquidationStream();
   SETTINGS.proxyUrl  = document.getElementById('set-proxy-url').value.trim().replace(/\/$/,'');
   SETTINGS.botSecret = document.getElementById('set-bot-secret').value.trim();
   document.getElementById('daily-max').textContent=SETTINGS.maxTrades;
@@ -2837,7 +3797,31 @@ function drawChart(){
 }
 
 // ─── MODALS ───────────────────────────────────────────────────
-function openModal(id){document.getElementById(id).classList.add('open');}
+function openModal(id){
+  document.getElementById(id).classList.add('open');
+  if(id==='modal-risk'){
+    const el=i=>document.getElementById(i);
+    if(el('set-min-score'))      el('set-min-score').value      = SETTINGS.minScore     || 7.0;
+    if(el('set-max-trades-top')) el('set-max-trades-top').value = SETTINGS.maxTrades    || 5;
+    if(el('set-cooldown'))       el('set-cooldown').value       = SETTINGS.cooldownMins || 30;
+    if(el('set-max-pos'))        el('set-max-pos').value        = SETTINGS.maxPosPct      || 100;
+    if(el('set-min-notional'))   el('set-min-notional').value   = SETTINGS.minNotional    || 10;
+    if(el('set-atr-mult'))       el('set-atr-mult').value       = SETTINGS.atrMult        || 1.5;
+    if(el('set-weekday-score'))  el('set-weekday-score').value  = SETTINGS.weekdayMinScore|| 8.0;
+    if(el('set-use-atr-sl'))     el('set-use-atr-sl').checked   = SETTINGS.useAtrSl      !== false;
+    if(el('set-confirm-delay'))  el('set-confirm-delay').checked= SETTINGS.confirmDelay  !== false;
+    if(el('set-filter-regime'))  el('set-filter-regime').checked= SETTINGS.filterRegime  !== false;
+    if(el('set-filter-weekday')) el('set-filter-weekday').checked=SETTINGS.filterWeekday !== false;
+    if(el('set-trailing-sl'))    el('set-trailing-sl').checked  = SETTINGS.trailingSl    !== false;
+    if(el('set-mandatory-filters'))el('set-mandatory-filters').checked=SETTINGS.mandatoryFilters!==false;
+    if(el('set-filter-liq'))       el('set-filter-liq').checked         =SETTINGS.filterLiq          !==false;
+    if(el('set-vol-spike'))        el('set-vol-spike').value            =SETTINGS.volSpikeMin        ||1.5;
+    if(el('set-require-breakout')) el('set-require-breakout').checked   =SETTINGS.requireBreakout    !==false;
+    if(el('set-sl-candle-low'))    el('set-sl-candle-low').checked      =SETTINGS.slBelowCandleLow   !==false;
+    if(el('set-liq-threshold'))    el('set-liq-threshold').value        =SETTINGS.liqThresholdUSD    ||500000;
+    if(el('set-liq-directional'))  el('set-liq-directional').checked    =SETTINGS.liqDirectional     !==false;
+  }
+}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 document.querySelectorAll('.modal-overlay').forEach(m=>{
   m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});
@@ -3022,8 +4006,21 @@ log('BOOT','info','FuelBot PRO v5 — Multi-Coin · Multi-Exchange · GMT+3');
     txt.style.color='var(--green)';
   }
 })();
-log('INFO','info','Sessions: 4:00 AM & 4:00 PM · 15m candles · 2/3 green = ENTER');
-log('COIN','info','30 coins available — BTC/ETH/SOL/BNB/XRP + 25 more · click any coin to switch');
+log('SPOT','info','SPOT ONLY · 6 new enhancements active · data-proven by 4-month backtest');
+  log('INFO','info','v6 changes: BOR score removed · Asian session removed · 6 losing coins demoted · mandatory filter gate');
+  log('INFO','info','Sessions: 4AM⭐ · 4PM⭐ · London 8-10AM · NY 14-16PM (Asian removed) · score≥'+SETTINGS.minScore);
+  log('LIQ','info','⚡ BTC Liquidation stream: wss://fstream.binance.com/ws/!forceOrder@arr · threshold $'+((SETTINGS.liqThresholdUSD||500000)/1e3).toFixed(0)+'K');
+STATE.balance0 = SETTINGS.balance;
+  log('INFO','info','v8 FINAL + STARGATE FRACTAL · 6-layer signal · Fractal SL · 64%+ WR (6-month backtest) · 7/7 green months');
+  // Fetch multi-TF data for Stargate every 15 minutes
+  setInterval(async () => { if(SETTINGS.stargateMode) await fetchStargateTF(); }, 900000);
+  // Initial fetch
+  if(SETTINGS.stargateMode) setTimeout(fetchStargateTF, 3000);
+  // Start liquidation WebSocket stream
+  if(SETTINGS.filterLiq) {
+    setTimeout(() => startLiquidationStream(), 2000);  // slight delay after page load
+  }
+  log('COIN','info','30 coins available — BTC/ETH/SOL/BNB/XRP + 25 more · click any coin to switch');
 buildCoinBar();
 updateWatchGrid();
 log('INFO','info','Mode: SPOT LIVE · Binance/OKX/MEXC · 30 coins · direct live trading');
@@ -3441,11 +4438,12 @@ function renderSessionQuality() {
   const h  = t.getHours();
   const m  = t.getMinutes();
   const sessions = [
-    { name:'4:00 AM GMT+3 ⭐', hours:[4], peak:true,  desc:'PRIME — Highest priority' },
-    { name:'4:00 PM GMT+3 ⭐', hours:[16], peak:true, desc:'PRIME — Highest priority' },
-    { name:'London Open',      hours:[8,9,10], peak:false, desc:'Good — High liquidity' },
-    { name:'NY Session',       hours:[14,15,16,17], peak:false, desc:'Good — High volume' },
-    { name:'Asia Session',     hours:[0,1,2,3], peak:false, desc:'Low — Thin liquidity' },
+    { name:'4:00 AM GMT+3 ⭐',  hours:[4],       peak:true,  active:true, desc:'+2.5 · PEAK — highest priority window' },
+    { name:'4:00 PM GMT+3 ⭐',  hours:[16],      peak:true,  active:true, desc:'+2.5 · PEAK — highest priority window' },
+    { name:'London Open',        hours:[8,9],     peak:false, active:true, desc:'+1.5 · High liquidity, strong momentum' },
+    { name:'NY Open 14-16',      hours:[14,15],   peak:false, active:true, desc:'+1.5 · High volume, volatile moves' },
+    // Asian Close removed — backtest: only 7 trades/4 months, not worth risk
+    { name:'Off Session',        hours:[],        peak:false, active:false, desc:'+0 · No trades — outside windows' },
   ];
   const now = sessions.find(s => s.hours.includes(h));
   el.innerHTML = sessions.map(s => {
@@ -3965,26 +4963,67 @@ Rationale based on convergence of indicators.
 - Invalidation level: $X
 
 Be precise with price levels. Professional institutional tone. Maximum 600 words.`;
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    // ── Route through Railway proxy (avoids CORS) ──────────────
+    // If no proxy configured, show setup instructions
+    if(!SETTINGS.proxyUrl) {
+      el.innerHTML = `
+        <div style="padding:16px;border:1px solid var(--border2);border-radius:6px;background:var(--bg3);">
+          <div style="font-size:0.75rem;font-weight:700;color:var(--yellow);margin-bottom:8px;">⚠ Proxy Required for AI Analysis</div>
+          <div style="font-size:0.65rem;color:var(--muted2);line-height:1.7;margin-bottom:10px;">
+            The Anthropic API cannot be called directly from the browser (CORS restriction).<br>
+            You need to configure your Railway proxy URL in ⚙ Risk &amp; Settings → Proxy URL.
+          </div>
+          <div style="font-size:0.62rem;color:var(--muted2);padding:8px 10px;background:var(--bg2);border-radius:4px;font-family:var(--mono);">
+            1. Deploy the proxy server to Railway (see proxy-README.md)<br>
+            2. Open ⚙ Settings → paste your Railway URL<br>
+            3. Also add your Anthropic API key to Railway env vars as ANTHROPIC_KEY<br>
+            4. Re-run AI Analysis
+          </div>
+          <button onclick="openModal('modal-risk')" style="margin-top:10px;padding:6px 16px;border-radius:4px;border:1px solid var(--accent);background:rgba(0,200,255,0.08);color:var(--accent);cursor:pointer;font-family:var(--mono);font-size:0.65rem;">⚙ Open Settings</button>
+        </div>`;
+      return;
+    }
+
+    const proxyBase = SETTINGS.proxyUrl.replace(/\/$/, '');
+    const resp = await fetch(proxyBase + '/ai/analyse', {
       method: 'POST',
-      headers: { 'Content-Type':'application/json' },
+      headers: {
+        'Content-Type':  'application/json',
+        'X-Bot-Secret':  SETTINGS.botSecret || ''
+      },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model:      'claude-sonnet-4-20250514',
         max_tokens: 1500,
-        messages: [{ role:'user', content:prompt }]
+        messages:   [{ role:'user', content: prompt }]
       })
     });
-    const data = await resp.json();
-    const text = data.content?.map(c=>c.text||'').join('') || 'No response';
 
-    // Format the output nicely
+    if(!resp.ok) {
+      const errText = await resp.text();
+      throw new Error(`Proxy error ${resp.status}: ${errText.slice(0,120)}`);
+    }
+
+    const data = await resp.json();
+    const text = data.content?.map(b => b.text||'').join('') || data.error || 'No response from AI';
+
+    // Format nicely — bold headers, numbered sections
     el.innerHTML = text
       .replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--accent)">$1</strong>')
+      .replace(/^#{1,3}\s+(.+)$/gm, '<div style="color:var(--yellow);font-weight:700;margin:10px 0 4px;letter-spacing:0.06em;">$1</div>')
+      .replace(/^(\d+\.\s+\*\*)/gm, '<br><span style="color:var(--yellow)">$1</span>')
       .replace(/^(\d+\.\s)/gm, '<br><span style="color:var(--yellow)">$1</span>')
+      .replace(/\n\n/g, '<br><br>')
       .replace(/\n/g, '<br>');
 
   } catch(e) {
-    el.innerHTML = `<span style="color:var(--red);">AI analysis failed: ${e.message}</span>`;
+    el.innerHTML = `
+      <div style="padding:12px;border:1px solid var(--red2);border-radius:6px;background:rgba(255,45,85,0.05);">
+        <div style="color:var(--red);font-weight:700;margin-bottom:6px;">❌ AI Analysis Failed</div>
+        <div style="font-size:0.65rem;color:var(--muted2);">${e.message}</div>
+        <div style="font-size:0.6rem;color:var(--muted2);margin-top:8px;">
+          Common causes: proxy not running · wrong proxy URL · missing ANTHROPIC_KEY env var on Railway
+        </div>
+      </div>`;
   }
 }
 
@@ -4279,5 +5318,82 @@ function saveManualHits() {
   switchTab('dashboard');
 })();
 </script>
+
+<!-- ═══ STARGATE PANEL (AXMED DHALAC STRATEGY) ═══ -->
+<div id="stargate-panel" style="display:none;position:fixed;top:60px;right:16px;width:340px;
+  background:var(--bg2);border:1px solid var(--border2);border-radius:12px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.5);z-index:999;font-family:var(--mono);">
+  <div style="padding:14px 16px;border-bottom:1px solid var(--border2);
+    display:flex;align-items:center;justify-content:space-between;">
+    <span style="color:var(--yellow);font-weight:700;font-size:0.9rem;">⭐ STARGATE</span>
+    <span style="color:var(--muted2);font-size:0.7rem;">AXMED DHALAC STRATEGY</span>
+    <button onclick="toggleStargatePanel()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:1rem;">✕</button>
+  </div>
+
+  <!-- Activation Screen -->
+  <div id="sg-lock" style="padding:16px;">
+    <div style="color:var(--muted2);font-size:0.75rem;margin-bottom:10px;line-height:1.5;">
+      ⭐ <b style="color:var(--yellow)">STARGATE</b> — Multi-timeframe 5-layer signal engine.<br/>
+      Uses 4h trend + 1h momentum + liquidation microstructure + 15m entry.
+    </div>
+    <button onclick="stargateUnlock()"
+      style="width:100%;padding:10px;background:rgba(255,200,0,0.12);
+      border:1px solid var(--yellow);border-radius:6px;color:var(--yellow);
+      font-family:var(--mono);cursor:pointer;font-size:0.85rem;font-weight:700;">
+      ⭐ Activate Stargate Mode</button>
+  </div>
+
+  <!-- Signal Panel (shown after unlock) -->
+  <div id="sg-panel" style="display:none;padding:16px;">
+    <div style="margin-bottom:10px;">
+      <div id="sg-signal" style="font-size:0.85rem;font-weight:700;color:var(--muted2);margin-bottom:8px;">
+        Initialising...
+      </div>
+      <div id="sg-layers" style="font-size:0.7rem;line-height:1.8;"></div>
+    </div>
+
+    <div style="border-top:1px solid var(--border2);padding-top:10px;margin-top:4px;">
+      <div style="font-size:0.7rem;color:var(--muted2);margin-bottom:6px;">STRATEGY OVERVIEW</div>
+      <div style="font-size:0.72rem;color:var(--text);line-height:1.7;">
+        <div>📊 <b>L1:</b> 4h EMA21&gt;EMA55 · RSI 44-72 · Strong close</div>
+        <div>📈 <b>L2:</b> 1h 3/4 green · MACD+ · RSI 46-72</div>
+        <div>⚡ <b>L3:</b> Liq microstructure · Funding clear</div>
+        <div>🎯 <b>L4:</b> 15m EMA21 pullback · Vol spike 1.4x · 2 green</div>
+        <div>🛡 <b>L5:</b> Session window · SL &lt;3% · Risk gate</div>
+        <div style="margin-top:6px;color:var(--yellow);">RR: TP1=1:3 (50%) → TP2=1:6 Trail · Fractal SL · 64%+ WR (6mo test)</div>
+      </div>
+    </div>
+
+    <div id="sg-fractal-display" style="margin-top:10px;padding:8px;background:rgba(0,0,0,0.2);border-radius:6px;font-size:0.7rem;color:var(--muted2);display:none;">
+      <div style="color:var(--yellow);font-weight:700;margin-bottom:4px;">📐 LIVE FRACTALS</div>
+      <div id="sg-frac-4h">4h Bull: —</div>
+      <div id="sg-frac-1h">1h Bull: — (SL level)</div>
+      <div id="sg-frac-15m">15m Bear: — (breakout target)</div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <button onclick="SETTINGS.stargateMode=true;fetchStargateTF();log('STARGATE','info','Mode ON')"
+        style="flex:1;padding:7px;background:rgba(0,255,136,0.12);border:1px solid var(--green2);
+        border-radius:6px;color:var(--green);font-family:var(--mono);cursor:pointer;font-size:0.75rem;">
+        ▶ Enable</button>
+      <button onclick="SETTINGS.stargateMode=false;log('STARGATE','info','Mode OFF')"
+        style="flex:1;padding:7px;background:rgba(255,45,85,0.08);border:1px solid var(--red2);
+        border-radius:6px;color:var(--red);font-family:var(--mono);cursor:pointer;font-size:0.75rem;">
+        ■ Disable</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleStargatePanel() {
+  const p=document.getElementById('stargate-panel');
+  p.style.display=p.style.display==='none'?'block':'none';
+  if(p.style.display==='block' && SETTINGS.stargateUnlocked) {
+    document.getElementById('sg-lock').style.display='none';
+    document.getElementById('sg-panel').style.display='block';
+  }
+}
+</script>
+
 </body>
 </html>
