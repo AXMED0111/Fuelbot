@@ -332,6 +332,9 @@ header{position:relative;z-index:10;display:flex;justify-content:space-between;a
 
 /* ── RIGHT ── */
 .col-right{grid-column:3;grid-row:1/4;display:flex;flex-direction:column;gap:8px;}
+.dome-card{background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;text-align:center;}
+.dome-kpi-lbl{font-size:0.52rem;color:var(--muted2);letter-spacing:0.1em;margin-bottom:6px;text-transform:uppercase;}
+.dome-kpi-val{font-size:1.15rem;font-weight:700;font-family:var(--mono);}
 .score-ring-wrap{display:flex;flex-direction:column;align-items:center;padding:4px 0 8px;}
 .filter-list{display:flex;flex-direction:column;gap:5px;}
 .filter-item{display:flex;align-items:center;gap:7px;font-size:0.67rem;padding:5px 8px;border:1px solid var(--border);border-radius:3px;background:var(--bg3);}
@@ -1513,8 +1516,11 @@ setTimeout(() => {
   <button class="main-tab" id="tab-signals" onclick="switchTab('signals')">
     ⚡ SIGNALS
   </button>
+  <button class="main-tab" id="tab-dome" onclick="switchTab('dome')" style="color:var(--yellow);">
+    🏛 DOME
+  </button>
   <div style="margin-left:auto;font-size:0.58rem;color:var(--muted2);letter-spacing:0.1em;padding:8px 0;">
-    Quantum Trading · QPL Engine · Morgan Stanley Method
+    Quantum Trading · QPL Engine
   </div>
 </div>
 
@@ -3281,6 +3287,253 @@ async function autoFireTrades(direction){
   }
 }
 
+// ═══════════════════════════════════════════════════════
+// 🏛 DOME ENGINE — Capital overview + downloadable records
+// ═══════════════════════════════════════════════════════
+
+function renderDome() {
+  const trades = STATE.tradeHistory || [];
+  const capInput = parseFloat(document.getElementById('dome-capital')?.value) || SETTINGS.balance || 50;
+
+  // KPIs
+  const wins   = trades.filter(t=>t.result==='WIN'||t.estProfit>0);
+  const losses = trades.filter(t=>t.result==='LOSS'||t.estProfit<=0);
+  const totalPnL = trades.reduce((a,t)=>a+(t.pnl||t.estProfit||0),0);
+  const balance  = capInput + totalPnL;
+  const ret      = capInput > 0 ? (totalPnL/capInput*100) : 0;
+  const wr       = trades.length ? (wins.length/trades.length*100) : 0;
+  const best     = trades.length ? Math.max(...trades.map(t=>t.pnl||t.estProfit||0)) : 0;
+  const worst    = trades.length ? Math.min(...trades.map(t=>t.pnl||t.estProfit||0)) : 0;
+  const avgW     = wins.length   ? wins.reduce((a,t)=>a+(t.pnl||t.estProfit||0),0)/wins.length : 0;
+
+  const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('dome-val-balance', fmt$(balance));
+  set('dome-val-pnl',     (totalPnL>=0?'+':'')+fmt$(totalPnL));
+  set('dome-val-ret',     (ret>=0?'+':'')+ret.toFixed(2)+'%');
+  set('dome-val-trades',  trades.length);
+  set('dome-val-wr',      wr.toFixed(1)+'%');
+  set('dome-val-best',    '+'+fmt$(best));
+  set('dome-val-worst',   fmt$(worst));
+  set('dome-val-avgw',    '+'+fmt$(avgW));
+
+  // Colour P&L
+  const pnlEl = document.getElementById('dome-val-pnl');
+  if(pnlEl) pnlEl.style.color = totalPnL>=0 ? 'var(--green)' : 'var(--red)';
+  const retEl = document.getElementById('dome-val-ret');
+  if(retEl) retEl.style.color = ret>=0 ? 'var(--yellow)' : 'var(--red)';
+
+  // Equity bar chart
+  const chart = document.getElementById('dome-equity-chart');
+  if(chart && trades.length) {
+    let running = capInput;
+    const points = [capInput, ...trades.map(t=>{ running+=(t.pnl||t.estProfit||0); return running; })];
+    const minV = Math.min(...points); const maxV = Math.max(...points);
+    const range = maxV - minV || 1;
+    chart.innerHTML = points.slice(-60).map((v,i,arr) => {
+      const h = Math.max(4, ((v-minV)/range)*76);
+      const color = i===0 ? 'var(--muted2)' : (v>=arr[i-1]?'var(--green)':'var(--red)');
+      return `<div style="flex:1;min-width:3px;height:${h}px;background:${color};border-radius:1px 1px 0 0;opacity:0.85;"></div>`;
+    }).join('');
+  } else if(chart) {
+    chart.innerHTML = '<div style="color:var(--muted2);font-size:0.7rem;width:100%;text-align:center;padding-top:30px;">No trade data yet</div>';
+  }
+
+  // Trade table
+  const tbody = document.getElementById('dome-trade-tbody');
+  const empty = document.getElementById('dome-empty');
+  const countEl = document.getElementById('dome-trade-count');
+  if(countEl) countEl.textContent = trades.length + ' trade' + (trades.length!==1?'s':'');
+
+  if(trades.length && tbody) {
+    empty && (empty.style.display='none');
+    tbody.innerHTML = trades.slice(0,200).map((t,i) => {
+      const pnl = t.pnl||t.estProfit||0;
+      const isW = pnl >= 0;
+      const time = t.time ? new Date(t.time).toLocaleString() : '—';
+      return `<tr style="border-bottom:1px solid var(--border);${isW?'':'background:rgba(255,45,85,0.03)'}">
+        <td style="padding:6px 10px;color:var(--muted2);">${trades.length-i}</td>
+        <td style="padding:6px 10px;color:var(--muted2);white-space:nowrap;">${time}</td>
+        <td style="padding:6px 10px;color:var(--yellow);font-weight:700;">${t.coin||'—'}</td>
+        <td style="padding:6px 10px;">${fmtCoin?fmtCoin(t.entry):fmt$(t.entry||0)}</td>
+        <td style="padding:6px 10px;color:var(--red);">${fmt$(t.sl||0)}</td>
+        <td style="padding:6px 10px;color:var(--green);">${fmt$(t.tp1||0)}</td>
+        <td style="padding:6px 10px;font-weight:700;color:${isW?'var(--green)':'var(--red)'};">${isW?'+':''}${fmt$(pnl)}</td>
+        <td style="padding:6px 10px;color:var(--accent);">${(t.score||0).toFixed?t.score.toFixed(1):'—'}</td>
+        <td style="padding:6px 10px;">
+          <span style="padding:2px 7px;border-radius:10px;font-size:0.62rem;font-weight:700;
+            background:${isW?'rgba(0,255,136,0.12)':'rgba(255,45,85,0.12)'};
+            color:${isW?'var(--green)':'var(--red)'};">
+            ${t.result||( isW?'WIN':'SL')}
+          </span>
+        </td>
+      </tr>`;
+    }).join('');
+  } else if(tbody) {
+    empty && (empty.style.display='block');
+    tbody.innerHTML = '';
+  }
+}
+
+function syncDomeCapital() {
+  const cap = parseFloat(document.getElementById('dome-capital')?.value);
+  if(cap > 0) {
+    SETTINGS.balance = cap;
+    STATE.balance0   = cap;
+    const el = document.getElementById('set-balance');
+    if(el) el.value = cap.toFixed(2);
+    log('DOME','info',`💰 Capital synced to $${cap.toFixed(2)} — bot balance updated`);
+    renderDome();
+  }
+}
+
+function clearDomeHistory() {
+  if(!confirm('Clear all trade records? This cannot be undone.')) return;
+  STATE.tradeHistory = [];
+  STATE.sessionPnL = 0;
+  STATE.dailyTrades = 0;
+  document.getElementById('h-trades').textContent = '0';
+  document.getElementById('h-pnl').textContent = '$0.00';
+  renderDome();
+  log('DOME','info','Trade history cleared');
+}
+
+// ── DOME DOWNLOADS ────────────────────────────────────────
+function domeDownload(content, filename, mime) {
+  const blob = new Blob([content], {type: mime});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href=url; a.download=filename; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+}
+
+function domeDLcsv() {
+  const trades = STATE.tradeHistory;
+  if(!trades.length) { alert('No trades to export yet.'); return; }
+  const headers = ['#','Time','Coin','Exchange','Session','Entry','SL','TP1','TP2','Est P&L','Score','Result'];
+  const rows = trades.map((t,i) => [
+    trades.length-i,
+    t.time ? new Date(t.time).toLocaleString() : '',
+    t.coin||'',
+    t.exchange||'',
+    t.session||'',
+    (t.entry||0).toFixed(6),
+    (t.sl||0).toFixed(6),
+    (t.tp1||0).toFixed(6),
+    (t.tp2||0).toFixed(6),
+    (t.pnl||t.estProfit||0).toFixed(4),
+    (t.score||0).toFixed?t.score.toFixed(1):'',
+    t.result||''
+  ]);
+  const csv = [headers, ...rows].map(r => r.map(v=>`"${v}"`).join(',')).join('\n');
+  const fname = `FuelBot_Trades_${new Date().toISOString().slice(0,10)}.csv`;
+  domeDownload(csv, fname, 'text/csv');
+  log('DOME','info',`📊 CSV downloaded: ${fname} · ${trades.length} trades`);
+}
+
+function domeDLpdf() {
+  const trades = STATE.tradeHistory;
+  if(!trades.length) { alert('No trades to export yet.'); return; }
+  const wins    = trades.filter(t=>(t.pnl||t.estProfit||0)>=0).length;
+  const totalPnL= trades.reduce((a,t)=>a+(t.pnl||t.estProfit||0),0);
+  const wr      = (wins/trades.length*100).toFixed(1);
+  const cap     = parseFloat(document.getElementById('dome-capital')?.value)||SETTINGS.balance||50;
+
+  const rows_html = trades.slice(0,500).map((t,i) => {
+    const pnl = t.pnl||t.estProfit||0;
+    const isW = pnl >= 0;
+    return `<tr class="${isW?'w':'l'}">
+      <td>${trades.length-i}</td>
+      <td>${t.time?new Date(t.time).toLocaleString():''}</td>
+      <td><b>${t.coin||''}</b></td>
+      <td>${(t.entry||0).toFixed(4)}</td>
+      <td>${(t.sl||0).toFixed(4)}</td>
+      <td>${(t.tp1||0).toFixed(4)}</td>
+      <td style="color:${isW?'#006633':'#cc0022'};font-weight:700">${isW?'+':''}${(pnl).toFixed(4)}</td>
+      <td>${(t.score||0).toFixed?t.score.toFixed(1):''}</td>
+      <td><span style="padding:1px 6px;border-radius:8px;font-size:9px;font-weight:700;background:${isW?'#e6f9ee':'#fce8e8'};color:${isW?'#006633':'#cc0022'}">${t.result||(isW?'WIN':'SL')}</span></td>
+    </tr>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html><html><head><title>FuelBot Trade Report</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Courier New',monospace;padding:24px;color:#111;background:#fff;font-size:10.5px}
+h1{font-size:18px;font-weight:900;color:#003366;margin-bottom:2px}
+.sub{font-size:9px;color:#555;margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid #003366}
+.kpi{display:flex;gap:0;margin-bottom:18px;border:1px solid #ccc;border-radius:6px;overflow:hidden}
+.kc{flex:1;text-align:center;padding:10px 6px;border-right:1px solid #ccc}
+.kc:last-child{border-right:none}
+.kl{font-size:7.5px;color:#888;letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px}
+.kv{font-size:16px;font-weight:900}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th{background:#f0f4f8;padding:4px 7px;text-align:left;font-size:8px;letter-spacing:.05em;border-bottom:1px solid #ddd}
+td{padding:4px 7px;border-bottom:1px solid #f0f0f0;font-size:9.5px}
+.w td{background:#f4fff8} .l td{background:#fff4f4}
+@media print{body{padding:10px}}
+</style></head><body>
+<h1>⬡ FuelBot PRO — Trade Performance Report</h1>
+<div class="sub">Generated: ${new Date().toLocaleString()} &nbsp;·&nbsp; Capital: $${cap.toFixed(2)} &nbsp;·&nbsp; Total Trades: ${trades.length}</div>
+<div class="kpi">
+  <div class="kc"><div class="kl">Trades</div><div class="kv" style="color:#003366">${trades.length}</div></div>
+  <div class="kc"><div class="kl">Wins</div><div class="kv" style="color:#006633">${wins}</div></div>
+  <div class="kc"><div class="kl">Losses</div><div class="kv" style="color:#cc0022">${trades.length-wins}</div></div>
+  <div class="kc"><div class="kl">Win Rate</div><div class="kv" style="color:#cc7700">${wr}%</div></div>
+  <div class="kc"><div class="kl">Total P&L</div><div class="kv" style="color:${totalPnL>=0?'#006633':'#cc0022'}">${totalPnL>=0?'+':''}$${Math.abs(totalPnL).toFixed(2)}</div></div>
+  <div class="kc"><div class="kl">Balance</div><div class="kv" style="color:#003366">$${(cap+totalPnL).toFixed(2)}</div></div>
+</div>
+<table>
+  <tr><th>#</th><th>Time</th><th>Coin</th><th>Entry</th><th>SL</th><th>TP1</th><th>P&L</th><th>Score</th><th>Result</th></tr>
+  ${rows_html}
+</table>
+</body></html>`;
+
+  const fname = `FuelBot_Report_${new Date().toISOString().slice(0,10)}.html`;
+  domeDownload(html, fname, 'text/html');
+  log('DOME','info',`📄 Report downloaded: ${fname} · open in browser then Ctrl+P to save as PDF`);
+}
+
+function domeDLjson() {
+  const trades = STATE.tradeHistory;
+  if(!trades.length) { alert('No trades to export yet.'); return; }
+  const data = {
+    exported: new Date().toISOString(),
+    capital: parseFloat(document.getElementById('dome-capital')?.value)||SETTINGS.balance||50,
+    settings: {balance:SETTINGS.balance,slDist:SETTINGS.slDist,tp1R:SETTINGS.tp1R,minScore:SETTINGS.minScore},
+    trades
+  };
+  const fname = `FuelBot_Data_${new Date().toISOString().slice(0,10)}.json`;
+  domeDownload(JSON.stringify(data,null,2), fname, 'application/json');
+  log('DOME','info',`🗂 JSON exported: ${fname}`);
+}
+
+function domeDLsummary() {
+  const trades = STATE.tradeHistory;
+  const cap = parseFloat(document.getElementById('dome-capital')?.value)||SETTINGS.balance||50;
+  const wins = trades.filter(t=>(t.pnl||t.estProfit||0)>=0).length;
+  const totalPnL = trades.reduce((a,t)=>a+(t.pnl||t.estProfit||0),0);
+  const wr = trades.length?(wins/trades.length*100).toFixed(1):'0.0';
+  const txt = [
+    '══════════════════════════════════',
+    '  FuelBot PRO — Performance Summary',
+    '══════════════════════════════════',
+    `  Date:          ${new Date().toLocaleString()}`,
+    `  Capital:       $${cap.toFixed(2)}`,
+    `  Final Balance: $${(cap+totalPnL).toFixed(2)}`,
+    `  Total P&L:     ${totalPnL>=0?'+':''}$${totalPnL.toFixed(4)}`,
+    `  Return:        ${(totalPnL/cap*100).toFixed(2)}%`,
+    `  Total Trades:  ${trades.length}`,
+    `  Wins:          ${wins}`,
+    `  Losses:        ${trades.length-wins}`,
+    `  Win Rate:      ${wr}%`,
+    '══════════════════════════════════',
+    ...trades.slice(0,50).map((t,i)=>`  ${trades.length-i}. ${t.coin||''} | ${(t.pnl||t.estProfit||0)>=0?'WIN':'SL'} | ${(t.pnl||t.estProfit||0)>=0?'+':''}$${(t.pnl||t.estProfit||0).toFixed(4)}`),
+    '══════════════════════════════════',
+  ].join('\n');
+  const fname = `FuelBot_Summary_${new Date().toISOString().slice(0,10)}.txt`;
+  domeDownload(txt, fname, 'text/plain');
+  log('DOME','info',`📋 Summary exported: ${fname}`);
+}
+
 // ── CONFIRM DELAY helper ─────────────────────────────────────────
 // Returns true if we have a new confirmed candle after the signal candle
 function isConfirmReady(signalCandle) {
@@ -3438,6 +3691,8 @@ async function placeOrder(exchangeName, direction){
 
   addTradeRow(trade);
   if(SHEETS.connected) syncTradeToSheets(trade);
+  // Update Dome panel live when trades are added
+  if(document.getElementById('dome-panel')?.style.display !== 'none') renderDome();
 }
 
 // ─── EXCHANGE API CALLS ───────────────────────────────────────
@@ -4092,24 +4347,26 @@ function saveSigState() {
 
 // ── TAB MANAGEMENT ────────────────────────────────────────────
 function switchTab(tab) {
-  const dp = document.getElementById('dashboard-panel');
-  const sp = document.getElementById('signals-panel');
-  if(dp) dp.style.display = tab==='dashboard' ? '' : 'none';
-  if(sp) sp.style.display = tab==='signals'   ? '' : 'none';
+  const panels = {
+    'dashboard': document.getElementById('dashboard-panel'),
+    'signals':   document.getElementById('signals-panel'),
+    'dome':      document.getElementById('dome-panel'),
+  };
+  Object.entries(panels).forEach(([k,el]) => {
+    if(el) el.style.display = k===tab ? '' : 'none';
+  });
   document.querySelectorAll('.main-tab').forEach(b => b.classList.toggle('active', b.id==='tab-'+tab));
-  if(tab==='signals') {
-    buildSigCoinTabs();
-    loadSignalCoin(SIG.active);
-  }
+  if(tab==='signals') { buildSigCoinTabs(); loadSignalCoin(SIG.active); }
+  if(tab==='dome')    { renderDome(); }
 }
 
 function switchTF(tf) {
   SIG.view = tf;
   ['daily','weekly','analysis','history'].forEach(v => {
-    const el = document.getElementById('view-'+v);
-    if(el) el.style.display = v===tf ? '' : 'none';
+    const el  = document.getElementById('view-'+v);
     const tab = document.getElementById('tf-'+v);
-    if(tab) tab.classList.toggle('active', v===tf);
+    if(el)  el.style.display  = v===tf ? '' : 'none';
+    if(tab) tabb.classList.toggle('active', v===tf);
   });
   if(tf==='history') renderHistory(SIG.active);
 }
@@ -5201,11 +5458,14 @@ td{padding:4px 7px;border-bottom:1px solid #f0f0f0;vertical-align:middle;font-si
   });
 
   html += '</body></html>';
-  const w = window.open('','_blank');
-  if(!w) { alert('Please allow pop-ups to export PDF.'); return; }
-  w.document.write(html);
-  w.document.close();
-  setTimeout(()=>w.print(), 500);
+  // Blob-based PDF download — no popup needed
+  const blob = new Blob([html], {type:'text/html'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const fname= `FuelBot_Report_${coin}_${from||'all'}_${to||'all'}.html`.replace(/[^a-zA-Z0-9._-]/g,'_');
+  a.href=url; a.download=fname; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+  log('EXPORT','info',`📥 PDF report downloaded: ${fname} · ${rows.length} signals`);
 }
 
 // Legacy button shim
@@ -5394,6 +5654,123 @@ function toggleStargatePanel() {
   }
 }
 </script>
+
+
+<!-- ══════════════════════════════════════════════════════
+     🏛 DOME — Capital Overview & Records
+     ═══════════════════════════════════════════════════ -->
+<div id="dome-panel" style="display:none;padding:0;overflow-y:auto;max-height:calc(100vh - 100px);">
+
+  <!-- Capital Adjuster Bar -->
+  <div style="background:var(--bg3);border-bottom:1px solid var(--border2);padding:12px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+    <span style="font-size:0.62rem;color:var(--accent);letter-spacing:0.12em;font-family:var(--mono);white-space:nowrap;">🏛 DOME · CAPITAL OVERVIEW</span>
+    <div style="display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap;">
+      <span style="font-size:0.62rem;color:var(--muted2);">Capital:</span>
+      <input type="number" id="dome-capital" value="50" min="1" step="10"
+        oninput="renderDome()"
+        style="width:90px;background:var(--bg2);border:1px solid var(--accent);border-radius:4px;padding:5px 8px;color:var(--accent);font-family:var(--mono);font-size:0.85rem;outline:none;text-align:center;"/>
+      <span style="font-size:0.62rem;color:var(--muted2);">USDT</span>
+      <button onclick="syncDomeCapital()" style="padding:5px 12px;background:rgba(0,200,255,0.1);border:1px solid var(--accent);border-radius:4px;color:var(--accent);font-family:var(--mono);font-size:0.7rem;cursor:pointer;">⟳ Sync to Bot</button>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;padding:14px 16px;">
+    <div class="dome-card" id="dome-kpi-balance">
+      <div class="dome-kpi-lbl">Current Balance</div>
+      <div class="dome-kpi-val" id="dome-val-balance" style="color:var(--green);">$0.00</div>
+    </div>
+    <div class="dome-card" id="dome-kpi-pnl">
+      <div class="dome-kpi-lbl">Total P&amp;L</div>
+      <div class="dome-kpi-val" id="dome-val-pnl">$0.00</div>
+    </div>
+    <div class="dome-card">
+      <div class="dome-kpi-lbl">Return %</div>
+      <div class="dome-kpi-val" id="dome-val-ret" style="color:var(--yellow);">0.0%</div>
+    </div>
+    <div class="dome-card">
+      <div class="dome-kpi-lbl">Total Trades</div>
+      <div class="dome-kpi-val" id="dome-val-trades" style="color:var(--accent);">0</div>
+    </div>
+    <div class="dome-card">
+      <div class="dome-kpi-lbl">Win Rate</div>
+      <div class="dome-kpi-val" id="dome-val-wr" style="color:var(--green);">0%</div>
+    </div>
+    <div class="dome-card">
+      <div class="dome-kpi-lbl">Best Trade</div>
+      <div class="dome-kpi-val" id="dome-val-best" style="color:var(--green);">$0.00</div>
+    </div>
+    <div class="dome-card">
+      <div class="dome-kpi-lbl">Worst Trade</div>
+      <div class="dome-kpi-val" id="dome-val-worst" style="color:var(--red);">$0.00</div>
+    </div>
+    <div class="dome-card">
+      <div class="dome-kpi-lbl">Avg Win</div>
+      <div class="dome-kpi-val" id="dome-val-avgw" style="color:var(--green);">$0.00</div>
+    </div>
+  </div>
+
+  <!-- Equity Bar Chart -->
+  <div style="padding:0 16px 10px;">
+    <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:14px;">
+      <div style="font-size:0.6rem;color:var(--muted2);letter-spacing:0.1em;margin-bottom:10px;">📈 EQUITY CURVE (session trades)</div>
+      <div id="dome-equity-chart" style="height:80px;display:flex;align-items:flex-end;gap:2px;overflow:hidden;"></div>
+    </div>
+  </div>
+
+  <!-- Download Section -->
+  <div style="padding:0 16px 10px;">
+    <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:14px;">
+      <div style="font-size:0.6rem;color:var(--muted2);letter-spacing:0.1em;margin-bottom:12px;">📥 DOWNLOAD RECORDS</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <button onclick="domeDLcsv()" style="padding:11px 8px;background:rgba(0,255,136,0.08);border:1px solid var(--green2);border-radius:6px;color:var(--green);font-family:var(--mono);font-size:0.75rem;font-weight:700;cursor:pointer;transition:all 0.2s;">
+          📊 Download CSV<br/><span style="font-size:0.62rem;font-weight:400;color:var(--muted2);">All trades · Excel compatible</span>
+        </button>
+        <button onclick="domeDLpdf()" style="padding:11px 8px;background:rgba(255,213,0,0.08);border:1px solid rgba(255,213,0,0.4);border-radius:6px;color:var(--yellow);font-family:var(--mono);font-size:0.75rem;font-weight:700;cursor:pointer;transition:all 0.2s;">
+          📄 Download Report<br/><span style="font-size:0.62rem;font-weight:400;color:var(--muted2);">PDF-ready HTML · Print to PDF</span>
+        </button>
+        <button onclick="domeDLjson()" style="padding:11px 8px;background:rgba(0,200,255,0.06);border:1px solid var(--border2);border-radius:6px;color:var(--accent);font-family:var(--mono);font-size:0.75rem;font-weight:700;cursor:pointer;transition:all 0.2s;">
+          🗂 Export JSON<br/><span style="font-size:0.62rem;font-weight:400;color:var(--muted2);">Raw data · All fields</span>
+        </button>
+        <button onclick="domeDLsummary()" style="padding:11px 8px;background:rgba(255,45,85,0.06);border:1px solid var(--border2);border-radius:6px;color:var(--muted2);font-family:var(--mono);font-size:0.75rem;font-weight:700;cursor:pointer;transition:all 0.2s;">
+          📋 Summary TXT<br/><span style="font-size:0.62rem;font-weight:400;color:var(--muted2);">Quick stats · Copy friendly</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trade Log -->
+  <div style="padding:0 16px 20px;">
+    <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:8px;overflow:hidden;">
+      <div style="padding:12px 14px;border-bottom:1px solid var(--border2);display:flex;align-items:center;gap:10px;">
+        <span style="font-size:0.6rem;color:var(--muted2);letter-spacing:0.1em;">📋 TRADE RECORDS</span>
+        <span id="dome-trade-count" style="font-size:0.6rem;color:var(--accent);margin-left:auto;">0 trades</span>
+        <button onclick="clearDomeHistory()" style="font-size:0.6rem;padding:3px 8px;background:rgba(255,45,85,0.1);border:1px solid var(--red2);border-radius:3px;color:var(--red);cursor:pointer;font-family:var(--mono);">Clear</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.68rem;font-family:var(--mono);">
+          <thead>
+            <tr style="background:var(--bg3);">
+              <th style="padding:6px 10px;text-align:left;color:var(--muted2);font-weight:600;white-space:nowrap;">#</th>
+              <th style="padding:6px 10px;text-align:left;color:var(--muted2);font-weight:600;">Time</th>
+              <th style="padding:6px 10px;text-align:left;color:var(--muted2);font-weight:600;">Coin</th>
+              <th style="padding:6px 10px;text-align:left;color:var(--muted2);font-weight:600;">Entry</th>
+              <th style="padding:6px 10px;text-align:left;color:var(--muted2);font-weight:600;">SL</th>
+              <th style="padding:6px 10px;text-align:left;color:var(--muted2);font-weight:600;">TP1</th>
+              <th style="padding:6px 10px;text-align:left;color:var(--muted2);font-weight:600;">P&amp;L</th>
+              <th style="padding:6px 10px;text-align:left;color:var(--muted2);font-weight:600;">Score</th>
+              <th style="padding:6px 10px;text-align:left;color:var(--muted2);font-weight:600;">Result</th>
+            </tr>
+          </thead>
+          <tbody id="dome-trade-tbody"></tbody>
+        </table>
+        <div id="dome-empty" style="padding:28px;text-align:center;color:var(--muted2);font-size:0.7rem;">
+          No trades recorded yet. Place your first trade to see records here.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
