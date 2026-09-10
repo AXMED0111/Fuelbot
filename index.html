@@ -1125,6 +1125,44 @@ setTimeout(() => {
         <input type="checkbox" id="set-trailing-sl" checked style="width:18px;height:18px;accent-color:var(--accent);"/>
         <span class="form-hint" style="margin:0;">Move SL to break-even after TP1 — locks profit</span>
       </div>
+      <!-- AGGRESSIVE MODE SECTION -->
+      <div style="margin:8px 0 4px;padding:10px 14px;background:rgba(255,100,0,0.08);border:1px solid rgba(255,100,0,0.4);border-radius:6px;">
+        <div style="font-size:0.65rem;color:#ff6400;font-weight:700;letter-spacing:0.1em;margin-bottom:8px;">⚡ AGGRESSIVE MODE — HIGH RISK / HIGH REWARD</div>
+        <div style="font-size:0.68rem;color:var(--muted2);margin-bottom:10px;line-height:1.5;">
+          Overrides fractal SL with a fixed % stop loss and sets large profit targets (15-20%). 
+          Trades fire less often (max 2/day, 4h cooldown) but profit per win is much larger.
+          <b style="color:#ff6400;">⚠ 5% SL on $50 = $2.50 max loss per trade.</b>
+        </div>
+        <div class="form-row" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
+          <label style="min-width:150px;color:#ff6400;">⚡ Aggressive Mode</label>
+          <input type="checkbox" id="set-aggressive-mode" style="width:18px;height:18px;accent-color:#ff6400;"/>
+          <span class="form-hint" style="margin:0;color:#ff6400;">ON = 5% SL · 15% TP1 · 20% TP2 · max 2/day</span>
+        </div>
+        <div class="form-row">
+          <label>Stop Loss % (distance from entry)</label>
+          <input type="number" id="set-aggr-sl" value="5.0" min="1" max="15" step="0.5"
+            style="background:var(--bg3);border:1px solid rgba(255,100,0,0.5);border-radius:4px;padding:8px 12px;color:#ff6400;font-family:var(--mono);font-size:0.85rem;outline:none;width:100%;"/>
+          <span class="form-hint">e.g. 5 = SL placed 5% below entry price</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="form-row">
+            <label>Take Profit 1 %</label>
+            <input type="number" id="set-aggr-tp1" value="15.0" min="5" max="50" step="1"
+              style="background:var(--bg3);border:1px solid rgba(0,255,136,0.4);border-radius:4px;padding:8px 12px;color:var(--green);font-family:var(--mono);font-size:0.85rem;outline:none;width:100%;"/>
+            <span class="form-hint">Exit 50% position here</span>
+          </div>
+          <div class="form-row">
+            <label>Take Profit 2 %</label>
+            <input type="number" id="set-aggr-tp2" value="20.0" min="10" max="100" step="1"
+              style="background:var(--bg3);border:1px solid rgba(255,213,0,0.4);border-radius:4px;padding:8px 12px;color:var(--yellow);font-family:var(--mono);font-size:0.85rem;outline:none;width:100%;"/>
+            <span class="form-hint">Trail remaining 50% to here</span>
+          </div>
+        </div>
+        <div style="font-size:0.65rem;color:var(--muted2);margin-top:6px;">
+          RR at defaults: SL=5% · TP1=15% (3:1) · TP2=20% (4:1) · Break-even WR = 25%
+        </div>
+      </div>
+
       <div class="form-row" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
         <label style="min-width:150px;">⚡ Liquidation Filter</label>
         <input type="checkbox" id="set-filter-liq" checked style="width:18px;height:18px;accent-color:var(--accent);"/>
@@ -1186,12 +1224,12 @@ setTimeout(() => {
         </div>
         <div class="form-row">
           <label>Railway Proxy URL</label>
-          <input type="text" id="set-proxy-url" placeholder="https://fuelbot-proxy-production.up.railway.app"/>
+          <input type="text" id="set-proxy-url" value="https://fuelbot-api-production.up.railway.app" placeholder="https://your-app.up.railway.app"/>
           <span class="form-hint">Your Railway deployment URL — enables live order execution</span>
         </div>
         <div class="form-row">
           <label>Bot Secret Key</label>
-          <input type="password" id="set-bot-secret" placeholder="Same as BOT_SECRET in Railway vars…"/>
+          <input type="password" id="set-bot-secret" value="fuelbot_YWWWYshh4jH4wL8ZWcR5BKa9Szti" placeholder="Same as BOT_SECRET in Railway vars…"/>
           <span class="form-hint">Must match the BOT_SECRET environment variable on Railway</span>
         </div>
         <div class="api-test-row">
@@ -1454,7 +1492,8 @@ setTimeout(() => {
   <div class="logo">⬡ FUELBOT<sub>PRO v5</sub></div>
   <div class="hdr-center">
     <div class="hdr-stat"><span class="val" id="h-price">—</span><span class="lbl" id="h-pair-lbl">BTC/USD</span></div>
-    <div class="hdr-stat"><span class="val" id="h-mode" style="color:var(--red);font-size:0.7rem;font-weight:900;">ALL-IN 🔥</span></div>
+    <div class="hdr-stat"><span class="val" id="h-mode" style="color:var(--red);font-size:0.7rem;font-weight:900;">ALL-IN 🔥</span>
+    <span id="h-aggr-badge" style="display:none;padding:2px 6px;background:rgba(255,100,0,0.2);border:1px solid #ff6400;border-radius:4px;color:#ff6400;font-size:0.62rem;font-weight:900;letter-spacing:0.05em;cursor:pointer;" onclick="switchTab('dashboard')" title="Aggressive Mode ON — 5% SL · 15-20% TP">⚡ AGGR</span></div>
     <div class="hdr-stat" style="cursor:pointer;" onclick="toggleStargatePanel()"><span class="val" style="color:var(--yellow);font-size:0.7rem;font-weight:700;">⭐ SG</span><span class="lbl">STARGATE</span></div>
     <div class="hdr-stat"><span class="val" id="liq-stats" style="font-size:0.68rem;color:var(--muted2);">LIQ —</span><span class="lbl">LIQ $</span><span class="lbl">MODE</span></div>
     <div class="hdr-stat"><span class="val" style="color:var(--green);font-size:0.7rem;font-weight:700;">SPOT ✅</span><span class="lbl">TYPE</span><span class="lbl">MODE</span></div>
@@ -2115,8 +2154,19 @@ let SETTINGS = {
   fractalLookback:30,  // how many bars to look back for fractals
   fractalSL:      true, // use 1h bullish fractal as SL (vs arbitrary distance)
 
-  proxyUrl:    '',
-  botSecret:   '',
+  // ── AGGRESSIVE MODE ─────────────────────────────────────
+  // High risk / high reward: wider SL, much larger profit targets
+  // SL = fixed %, TP1 = 15%, TP2 = 20%+ — overrides fractal SL
+  // WARNING: 5% SL on $50 = $2.50 max loss per trade
+  aggressiveMode:  false,
+  aggressiveSlPct: 5.0,   // 5% stop loss from entry
+  aggressiveTp1Pct:15.0,  // 15% take profit 1 (take 50%)
+  aggressiveTp2Pct:20.0,  // 20% take profit 2 (trail remaining 50%)
+  aggressiveMaxDay:2,      // max 2 trades/day in aggressive mode
+  aggressiveCool:  240,    // 4h cooldown — quality over quantity
+
+  proxyUrl:    'https://fuelbot-api-production.up.railway.app',   // Railway proxy — live
+  botSecret:   'fuelbot_YWWWYshh4jH4wL8ZWcR5BKa9Szti',
 };
 
 // ─── EXCHANGE CONFIG ──────────────────────────────────────────
@@ -2681,16 +2731,28 @@ function runStargateSignal() {
   const h_=t.getHours(), m_=t.getMinutes();
   const inSess = (h_===4&&m_<30)||(h_===16&&m_<30)||(h_>=8&&h_<10)||(h_>=14&&h_<16);
 
-  // FRACTAL SL: below last confirmed 1h bullish fractal (real support level)
-  // This replaces arbitrary candle low — fractal low = price was REJECTED here
-  let sl;
-  if(f1h.bullLow && f1h.bullLow < price && f1h.bullLow > price*0.97) {
-    sl = f1h.bullLow * 0.9985;  // 0.15% below proven 1h fractal support
-  } else if(f15.bullLow && f15.bullLow < price) {
-    sl = f15.bullLow * 0.9988;  // fallback: 15m fractal support
+  // ── SL/TP CALCULATION — respects mode ──────────────────
+  let sl, tp1, tp2;
+
+  if(SETTINGS.aggressiveMode) {
+    // AGGRESSIVE MODE: fixed % SL + large % targets
+    // Bypasses fractal SL — uses explicit % distance for predictable risk
+    sl  = price * (1 - SETTINGS.aggressiveSlPct  / 100);
+    tp1 = price * (1 + SETTINGS.aggressiveTp1Pct / 100);
+    tp2 = price * (1 + SETTINGS.aggressiveTp2Pct / 100);
+    log('AGGR','warn',`🔥 AGGRESSIVE: SL=${(SETTINGS.aggressiveSlPct).toFixed(1)}% · TP1=${(SETTINGS.aggressiveTp1Pct).toFixed(0)}% · TP2=${(SETTINGS.aggressiveTp2Pct).toFixed(0)}%`);
   } else {
-    const pullbackLow = Math.min(c3.low||c3.l||price, c2.low||c2.l||price);
-    sl = pullbackLow * 0.9990;  // final fallback
+    // NORMAL MODE: fractal SL
+    if(f1h.bullLow && f1h.bullLow < price && f1h.bullLow > price*0.97) {
+      sl = f1h.bullLow * 0.9985;
+    } else if(f15.bullLow && f15.bullLow < price) {
+      sl = f15.bullLow * 0.9988;
+    } else {
+      const pullbackLow = Math.min(c3.low||c3.l||price, c2.low||c2.l||price);
+      sl = pullbackLow * 0.9990;
+    }
+    tp1 = price + (price-sl) * (SETTINGS.tp1R||3.0);
+    tp2 = price + (price-sl) * (SETTINGS.tp2R||6.0);
   }
   const slDist = price - sl;
   const slPct = slDist/price;
@@ -2949,8 +3011,14 @@ function calculateTrade() {
   const riskAmt = balance*(SETTINGS.riskPct/100);
 
   // update KV labels
-  document.getElementById('kv-risk').textContent = SETTINGS.riskPct+'%';
-  document.getElementById('kv-sl-dist').textContent = SETTINGS.slDist+'%';
+  // Show mode-aware values in signal panel
+  if(SETTINGS.aggressiveMode) {
+    document.getElementById('kv-risk').textContent    = SETTINGS.aggressiveSlPct+'%';
+    document.getElementById('kv-sl-dist').textContent = SETTINGS.aggressiveSlPct+'%';
+  } else {
+    document.getElementById('kv-risk').textContent    = SETTINGS.riskPct+'%';
+    document.getElementById('kv-sl-dist').textContent = SETTINGS.slDist+'%';
+  }
   document.getElementById('kv-tp1-r').textContent = SETTINGS.tp1R;
   document.getElementById('kv-tp2-r').textContent = SETTINGS.tp2R;
   document.getElementById('pr-balance').textContent = fmt$(balance,0);
@@ -3261,7 +3329,7 @@ async function autoFireTrades(direction){
   const inSess = isInSession(t);
   if(!inSess)                                    { log('SKIP','skip','Not in session — skipped'); return; }
   if(STATE.newsActive)                           { log('SKIP','skip','News active — skipped'); return; }
-  if(STATE.dailyTrades>=SETTINGS.maxTrades)      { log('LIMIT','warn','Daily limit reached'); return; }
+  if(STATE.dailyTrades>=(SETTINGS.aggressiveMode?SETTINGS.aggressiveMaxDay:SETTINGS.maxTrades)){ log('LIMIT','warn','Daily limit reached'); return; }
   if(STATE.score < SETTINGS.minScore)            { log('SKIP','skip',`Score ${STATE.score.toFixed(1)} below min ${SETTINGS.minScore}`); return; }
   if(!isCooldownOk())                            { log('COOL','warn',`Cooldown — ${cooldownRemaining()} min remaining`); return; }
 
@@ -3563,7 +3631,8 @@ function resetTrailingSl() {
 // Cooldown helpers
 function isCooldownOk() {
   if(!STATE.lastTradeTime) return true;
-  return (Date.now() - STATE.lastTradeTime) >= (SETTINGS.cooldownMins * 60 * 1000);
+  const cd = (SETTINGS.aggressiveMode ? SETTINGS.aggressiveCool : SETTINGS.cooldownMins) * 60 * 1000;
+  return (Date.now() - STATE.lastTradeTime) >= cd;
 }
 function cooldownRemaining() {
   if(!STATE.lastTradeTime) return 0;
@@ -3588,7 +3657,7 @@ function nextSessionIn(t) {
 
 async function executeTrade(direction){
   if(!STATE.price){log('ERR','warn','No price data — cannot execute');return;}
-  if(STATE.dailyTrades>=SETTINGS.maxTrades){log('LIMIT','warn','Daily trade limit reached');return;}
+  if(STATE.dailyTrades>=(SETTINGS.aggressiveMode?SETTINGS.aggressiveMaxDay:SETTINGS.maxTrades)){log('LIMIT','warn','Daily trade limit reached');return;}
   // SPOT ONLY: block manual SELL (short) attempts
   if(SETTINGS.spotOnly && direction.toUpperCase()==='SELL'){
     log('SPOT','warn','SELL blocked — spot-only mode · use BUY only');
@@ -3890,6 +3959,17 @@ function saveRiskSettings(){
   SETTINGS.trailingSl       = document.getElementById('set-trailing-sl')?.checked      ?? true;
   SETTINGS.mandatoryFilters    = document.getElementById('set-mandatory-filters')?.checked ?? true;
   SETTINGS.filterLiq           = document.getElementById('set-filter-liq')?.checked      ?? true;
+  // Aggressive mode
+  const aggrOn = document.getElementById('set-aggressive-mode')?.checked ?? false;
+  SETTINGS.aggressiveMode   = aggrOn;
+  SETTINGS.aggressiveSlPct  = parseFloat(document.getElementById('set-aggr-sl')?.value  || 5.0);
+  SETTINGS.aggressiveTp1Pct = parseFloat(document.getElementById('set-aggr-tp1')?.value || 15.0);
+  SETTINGS.aggressiveTp2Pct = parseFloat(document.getElementById('set-aggr-tp2')?.value || 20.0);
+  // Update header badge
+  const aggrBadge = document.getElementById('h-aggr-badge');
+  if(aggrBadge) aggrBadge.style.display = aggrOn ? 'inline-block' : 'none';
+  if(aggrOn) log('AGGR','warn',`⚡ AGGRESSIVE MODE: SL=${SETTINGS.aggressiveSlPct}% · TP1=${SETTINGS.aggressiveTp1Pct}% · TP2=${SETTINGS.aggressiveTp2Pct}% · Max ${SETTINGS.aggressiveMaxDay} trades/day`);
+  else log('INFO','info','Aggressive mode OFF — normal fractal SL active');
   SETTINGS.volSpikeMin         = parseFloat(document.getElementById('set-vol-spike')?.value  || 1.5);
   SETTINGS.requireBreakout     = document.getElementById('set-require-breakout')?.checked     ?? true;
   SETTINGS.slBelowCandleLow    = document.getElementById('set-sl-candle-low')?.checked        ?? true;
@@ -4070,6 +4150,10 @@ function openModal(id){
     if(el('set-trailing-sl'))    el('set-trailing-sl').checked  = SETTINGS.trailingSl    !== false;
     if(el('set-mandatory-filters'))el('set-mandatory-filters').checked=SETTINGS.mandatoryFilters!==false;
     if(el('set-filter-liq'))       el('set-filter-liq').checked         =SETTINGS.filterLiq          !==false;
+    if(el('set-aggressive-mode')) el('set-aggressive-mode').checked     =SETTINGS.aggressiveMode     ===true;
+    if(el('set-aggr-sl'))         el('set-aggr-sl').value               =SETTINGS.aggressiveSlPct    ||5.0;
+    if(el('set-aggr-tp1'))        el('set-aggr-tp1').value              =SETTINGS.aggressiveTp1Pct   ||15.0;
+    if(el('set-aggr-tp2'))        el('set-aggr-tp2').value              =SETTINGS.aggressiveTp2Pct   ||20.0;
     if(el('set-vol-spike'))        el('set-vol-spike').value            =SETTINGS.volSpikeMin        ||1.5;
     if(el('set-require-breakout')) el('set-require-breakout').checked   =SETTINGS.requireBreakout    !==false;
     if(el('set-sl-candle-low'))    el('set-sl-candle-low').checked      =SETTINGS.slBelowCandleLow   !==false;
@@ -4267,6 +4351,7 @@ log('SPOT','info','SPOT ONLY · 6 new enhancements active · data-proven by 4-mo
   log('LIQ','info','⚡ BTC Liquidation stream: wss://fstream.binance.com/ws/!forceOrder@arr · threshold $'+((SETTINGS.liqThresholdUSD||500000)/1e3).toFixed(0)+'K');
 STATE.balance0 = SETTINGS.balance;
   log('INFO','info','v8 FINAL + STARGATE FRACTAL · 6-layer signal · Fractal SL · 64%+ WR (6-month backtest) · 7/7 green months');
+  log('INFO','info','Risk modes: NORMAL (fractal SL ~1-3%) | AGGRESSIVE (5% SL · 15% TP1 · 20% TP2) — set in ⚙ Settings');
   // Fetch multi-TF data for Stargate every 15 minutes
   setInterval(async () => { if(SETTINGS.stargateMode) await fetchStargateTF(); }, 900000);
   // Initial fetch
