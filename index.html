@@ -2189,21 +2189,16 @@ const COIN_CATALOGUE = [
   { symbol:'EPICUSDT', base:'EPIC', label:'EpicChain',   icon:'⚡', decimals:4,  minQty:1      },
   { symbol:'SOLUSDT',  base:'SOL',  label:'Solana',      icon:'◎',  decimals:3,  minQty:0.01   },
   // ── SECOND TIER (profitable in C) ──────────────────────────────
+  { symbol:'ETHUSDT',  base:'ETH',  label:'Ethereum',    icon:'Ξ',  decimals:2,  minQty:0.001  },
   { symbol:'DOGEUSDT', base:'DOGE', label:'Dogecoin',    icon:'Ð',  decimals:5,  minQty:1      },
   { symbol:'BTCUSDT',  base:'BTC',  label:'Bitcoin',     icon:'₿',  decimals:2,  minQty:0.0001 },
   { symbol:'TONUSDT',  base:'TON',  label:'Toncoin',     icon:'💎', decimals:4,  minQty:0.1    },
   { symbol:'LINKUSDT', base:'LINK', label:'Chainlink',   icon:'⬡',  decimals:3,  minQty:0.1    },
   // ── CAUTION (weaker in backtest — monitor) ────────────────────
   { symbol:'IOTAUSDT', base:'IOTA', label:'IOTA',        icon:'◆',  decimals:4,  minQty:1      },
-  { symbol:'AVAXUSDT', base:'AVAX', label:'Avalanche',   icon:'▲',  decimals:3,  minQty:0.01   },
-  { symbol:'ADAUSDT',  base:'ADA',  label:'Cardano',     icon:'♠',  decimals:5,  minQty:1      },
-  { symbol:'SOLUSDT',  base:'SOL',  label:'Solana',      icon:'◎',  decimals:3,  minQty:0.01   },
   // ── ADDITIONAL COINS ────────────────────────────────────────────
   { symbol:'POLUSDT',  base:'POL',  label:'Polygon',     icon:'⬟',  decimals:4,  minQty:1      },
-  { symbol:'TONUSDT',  base:'TON',  label:'Toncoin',     icon:'💎', decimals:4,  minQty:0.1    },
-  { symbol:'DOGEUSDT', base:'DOGE', label:'Dogecoin',    icon:'Ð',  decimals:5,  minQty:10     },
   { symbol:'XRPUSDT',  base:'XRP',  label:'Ripple',      icon:'✕',  decimals:4,  minQty:1      },
-  { symbol:'BTCUSDT',  base:'BTC',  label:'Bitcoin',     icon:'₿',  decimals:2,  minQty:0.0001 },
   { symbol:'BNBUSDT',  base:'BNB',  label:'BNB',         icon:'⬡',  decimals:2,  minQty:0.01   },
   { symbol:'DOTUSDT',  base:'DOT',  label:'Polkadot',    icon:'●',  decimals:3,  minQty:0.1    },
   { symbol:'LTCUSDT',  base:'LTC',  label:'Litecoin',    icon:'Ł',  decimals:3,  minQty:0.01   },
@@ -4748,9 +4743,9 @@ function runFullAnalysis(coin, price, chg24, vol24, high24, low24, k15, k1h, k4h
   const ms = marketStructure(k1d);
 
   // ── RSI ───────────────────────────────────────────────────
-  const rsi15  = calcRSI(k15);
-  const rsi1h  = calcRSI(k1h);
-  const rsiD   = calcRSI(k1d);
+  const rsi15  = calcRSICandles(k15);
+  const rsi1h  = calcRSICandles(k1h);
+  const rsiD   = calcRSICandles(k1d);
   const rsiLabel = rsiD > 70 ? 'OVERBOUGHT' : rsiD < 30 ? 'OVERSOLD' : rsiD > 55 ? 'BULLISH' : rsiD < 45 ? 'BEARISH' : 'NEUTRAL';
 
   // ── MACD ──────────────────────────────────────────────────
@@ -4950,7 +4945,7 @@ function calcQPL(price, cs=0.0625) {
 }
 
 // ── RSI ────────────────────────────────────────────────────
-function calcRSI(candles, period=14) {
+function calcRSICandles(candles, period=14) {
   if(candles.length < period+2) return 50;
   let gains=0, losses=0;
   for(let i=1; i<=period; i++){
@@ -5329,13 +5324,13 @@ async function runAIAnalysis() {
     const high24 = parseFloat(ticker.highPrice);
     const low24  = parseFloat(ticker.lowPrice);
     const vol24  = parseFloat(ticker.quoteVolume);
-    const rsiD   = calcRSI(k1d);
+    const rsiD   = calcRSICandles(k1d);
     const macdD  = calcMACD(k1d);
     const ms     = marketStructure(k1d);
     const cs     = price < 0.001 ? 0.0000244 : price < 100 ? 0.0625 : price < 10000 ? 0.5 : 4;
     const qpl    = calcQPL(price, cs);
 
-    const rsiW = calcRSI(k1w);
+    const rsiW = calcRSICandles(k1w);
     const macdW = calcMACD(k1w);
     const msW = marketStructure(k1w);
     const vol7dAvg = k1d.slice(-7).reduce((a,c)=>a+c.v,0)/7;
