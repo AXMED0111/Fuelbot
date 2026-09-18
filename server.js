@@ -284,37 +284,39 @@ app.post('/mexc/balance', authCheck, async (req, res) => {
 
 // ═══════════════════════════════════════════════════════════════
 //  AI ANALYSIS — POST /ai/analyse
-//  Routes to Anthropic API (avoids browser CORS restriction)
-//  Requires ANTHROPIC_KEY env var on Railway
+//  Routes to DeepSeek API (avoids browser CORS restriction)
+//  Requires DEEPSEEK_API_KEY env var on Railway
 // ═══════════════════════════════════════════════════════════════
 app.post('/ai/analyse', authCheck, async (req, res) => {
-  const ANTHROPIC_KEY = process.env.ANTHROPIC_KEY;
-  if(!ANTHROPIC_KEY) {
-    return res.status(500).json({ ok: false, error: 'ANTHROPIC_KEY not set in Railway environment variables' });
+  const DEEPSEEK_KEY = process.env.DEEPSEEK_API_KEY;
+  if(!DEEPSEEK_KEY) {
+    return res.status(500).json({ ok: false, error: 'DEEPSEEK_API_KEY not set in Railway environment variables' });
   }
 
-  const { model, max_tokens, messages } = req.body;
+  const { max_tokens, messages } = req.body;
   if(!messages || !messages.length) {
     return res.status(400).json({ ok: false, error: 'Missing messages' });
   }
 
   try {
-    log(`AI analysis request — model: ${model || 'claude-sonnet-4-20250514'}`);
-    const response = await axios.post('https://api.anthropic.com/v1/messages', {
-      model:      model      || 'claude-sonnet-4-20250514',
+    log(`AI analysis request — model: deepseek-chat`);
+    const response = await axios.post('https://api.deepseek.com/chat/completions', {
+      model:      'deepseek-chat',
       max_tokens: max_tokens || 1500,
       messages,
     }, {
       headers: {
-        'x-api-key':         ANTHROPIC_KEY,
-        'anthropic-version': '2023-06-01',
-        'content-type':      'application/json',
+        'Authorization': `Bearer ${DEEPSEEK_KEY}`,
+        'content-type':  'application/json',
       },
       timeout: 60000,
     });
 
-    log(`AI analysis OK — ${response.data?.usage?.output_tokens || '?'} tokens`);
-    res.json(response.data);
+    const text = response.data?.choices?.[0]?.message?.content || '';
+    log(`AI analysis OK — ${response.data?.usage?.completion_tokens || '?'} tokens`);
+    // Reshaped to the same {content:[{type,text}]} envelope the frontend already parses —
+    // no frontend changes needed when switching providers.
+    res.json({ content: [{ type: 'text', text }] });
 
   } catch(err) {
     const status = err.response?.status || 500;
