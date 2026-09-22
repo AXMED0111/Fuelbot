@@ -1764,7 +1764,7 @@ setTimeout(() => {
 
       <!-- Order Status -->
       <div class="panel">
-        <div class="panel-hdr">📋 ORDERS</div>
+        <div class="panel-hdr" style="display:flex;align-items:center;justify-content:space-between;">📋 ORDERS <button onclick="closeBinancePosition()" style="font-size:0.62rem;padding:3px 9px;background:rgba(255,45,85,0.12);border:1px solid var(--red2);border-radius:4px;color:var(--red);cursor:pointer;font-family:var(--mono);">✖ Close Position</button></div>
         <div id="orders-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:6px;font-size:0.6rem;">
           <div id="ord-binance" style="padding:4px 6px;background:var(--bg3);border-radius:3px;border:1px solid var(--border2);">
             <div style="color:var(--muted2);font-size:0.5rem;">BINANCE</div>
@@ -3870,18 +3870,31 @@ async function sendToExchange(name, direction, price, sl, tp1, posUSDT){
   };
 
   if(name==='binance'){
+    // Spend a USDT amount (Binance sizes the coin qty to its own lot rules),
+    // and send SL/TP so the proxy attaches an exchange-side OCO exit.
     const body = {
-      apiKey:    ex.key,
-      apiSecret: ex.secret,
-      symbol:    ACTIVE_COIN.symbol,
-      side:      direction.toUpperCase(),
-      quantity:  qty,
+      apiKey:        ex.key,
+      apiSecret:     ex.secret,
+      symbol:        ACTIVE_COIN.symbol,
+      side:          'BUY',
+      quoteOrderQty: Number(posUSDT).toFixed(2),
+      sl, tp: tp1,
     };
-    log('BINANCE','trade',`[LIVE] ${direction.toUpperCase()} ${qty} ${ACTIVE_COIN.base} → proxy`);
+    log('BINANCE','trade',`[LIVE] BUY ${Number(posUSDT).toFixed(2)} USDT of ${ACTIVE_COIN.base} · SL ${fmt$(sl)} · TP ${fmt$(tp1)} → proxy`);
     const r = await fetch(proxy+'/binance/order', { method:'POST', headers, body:JSON.stringify(body) });
     const d = await r.json();
     if(!d.ok) throw new Error(JSON.stringify(d.error));
-    updateOrderStatus('binance','filled',`Order #${d.order?.orderId||'OK'}`,'+est');
+    const filledQty = d.order?.executedQty, spent = d.order?.cummulativeQuoteQty;
+    log('BINANCE','trade',`✔ FILLED #${d.order?.orderId} · ${filledQty} ${ACTIVE_COIN.base} for ${spent} USDT`);
+    if(d.oco){
+      log('BINANCE','info',`🛡 Exit on exchange (OCO #${d.oco.orderListId}) — closes at TP or SL even if this tab is closed`);
+      updateOrderStatus('binance','filled',`#${d.order?.orderId} · OCO #${d.oco.orderListId}`,'protected');
+    } else {
+      const why = d.ocoError ? JSON.stringify(d.ocoError) : 'no SL/TP sent';
+      log('BINANCE','warn',`⚠ POSITION UNPROTECTED — exit order failed: ${why}. Use ✖ Close Position.`);
+      updateOrderStatus('binance','error',`#${d.order?.orderId} · NO EXIT`,'unprotected');
+      alert('Trade filled but the stop-loss/take-profit order FAILED.\n\n'+why+'\n\nClose it manually with ✖ Close Position.');
+    }
     return d;
   }
 
@@ -3919,6 +3932,24 @@ async function sendToExchange(name, direction, price, sl, tp1, posUSDT){
     updateOrderStatus('mexc','filled',`Order #${d.order?.orderId||'OK'}`,'+est');
     return d;
   }
+}
+
+// ── Manual exit: cancel the OCO and market-sell the coin on Binance ──
+async function closeBinancePosition(){
+  const ex=EXCHANGES.binance, proxy=SETTINGS.proxyUrl, secret=SETTINGS.botSecret;
+  if(!proxy||!secret||!ex?.key||!ex?.secret){ alert('Binance API keys and proxy must be set first.'); return; }
+  if(!confirm(`Market-SELL all ${ACTIVE_COIN.base} on Binance and cancel its open exit orders?`)) return;
+  try{
+    const r=await fetch(proxy+'/binance/close',{method:'POST',
+      headers:{'Content-Type':'application/json','X-Bot-Secret':secret},
+      body:JSON.stringify({apiKey:ex.key,apiSecret:ex.secret,symbol:ACTIVE_COIN.symbol})});
+    const d=await r.json();
+    if(!d.ok) throw new Error(JSON.stringify(d.error));
+    if(d.closed){
+      log('BINANCE','trade',`✖ CLOSED ${ACTIVE_COIN.base} — sold ${d.order.executedQty} for ${d.order.cummulativeQuoteQty} USDT (cancelled ${d.cancelled} exit orders)`);
+      updateOrderStatus('binance','idle','Position closed','—');
+    } else log('BINANCE','info',d.note||'Nothing to close');
+  }catch(e){ log('BINANCE','warn','Close failed: '+e.message); alert('Close failed: '+e.message); }
 }
 
 // ─── ORDER STATUS UI ─────────────────────────────────────────
