@@ -3899,57 +3899,69 @@ async function sendToExchange(name, direction, price, sl, tp1, posUSDT){
   }
 
   if(name==='okx'){
-    // OKX uses instId format: BTC-USDT
     const instId = ACTIVE_COIN.base + '-USDT';
-    const body = {
-      apiKey:      ex.key,
-      apiSecret:   ex.secret,
-      passphrase:  ex.passphrase,
-      instId,
-      side:        direction.toLowerCase(),
-      sz:          qty,
-    };
-    log('OKX','trade',`[LIVE] ${direction.toUpperCase()} ${qty} ${instId} → proxy`);
+    const body = { apiKey:ex.key, apiSecret:ex.secret, passphrase:ex.passphrase, instId,
+                   quoteSz:Number(posUSDT).toFixed(2), sl, tp:tp1 };
+    log('OKX','trade',`[LIVE] BUY ${Number(posUSDT).toFixed(2)} USDT of ${instId} · SL ${fmt$(sl)} · TP ${fmt$(tp1)} → proxy`);
     const r = await fetch(proxy+'/okx/order', { method:'POST', headers, body:JSON.stringify(body) });
     const d = await r.json();
     if(!d.ok) throw new Error(JSON.stringify(d.error));
-    updateOrderStatus('okx','filled',`Order #${d.order?.ordId||'OK'}`,'+est');
+    log('OKX','trade',`✔ FILLED · ${d.order?.executedQty} ${ACTIVE_COIN.base} for ${d.order?.cummulativeQuoteQty} USDT`);
+    if(d.oco){
+      log('OKX','info',`🛡 Exit armed (${d.oco.algoId||d.oco.orderListId}) — TP/SL fire automatically, bot can be closed`);
+      updateOrderStatus('okx','filled',`Exit ${d.oco.algoId||d.oco.orderListId}`,'protected');
+    } else {
+      const why = d.ocoError ? JSON.stringify(d.ocoError) : 'no SL/TP sent';
+      log('OKX','warn',`⚠ POSITION UNPROTECTED — ${why}. Use ✖ Close Position.`);
+      updateOrderStatus('okx','error','NO EXIT','unprotected');
+      alert('OKX trade filled but the stop-loss/take-profit FAILED.\n\n'+why+'\n\nClose it with ✖ Close Position.');
+    }
     return d;
   }
 
   if(name==='mexc'){
-    const body = {
-      apiKey:    ex.key,
-      apiSecret: ex.secret,
-      symbol:    ACTIVE_COIN.symbol,
-      side:      direction.toUpperCase(),
-      quantity:  qty,
-    };
-    log('MEXC','trade',`[LIVE] ${direction.toUpperCase()} ${qty} ${ACTIVE_COIN.base} → proxy`);
+    // MEXC keys live in Railway (MEXC_API_KEY / MEXC_API_SECRET) so the stop-loss watchdog can act 24/7
+    const body = { symbol:ACTIVE_COIN.symbol, quoteOrderQty:Number(posUSDT).toFixed(2), sl, tp:tp1 };
+    log('MEXC','trade',`[LIVE] BUY ${Number(posUSDT).toFixed(2)} USDT of ${ACTIVE_COIN.symbol} · SL ${fmt$(sl)} (watchdog) · TP ${fmt$(tp1)} → proxy`);
     const r = await fetch(proxy+'/mexc/order', { method:'POST', headers, body:JSON.stringify(body) });
     const d = await r.json();
     if(!d.ok) throw new Error(JSON.stringify(d.error));
-    updateOrderStatus('mexc','filled',`Order #${d.order?.orderId||'OK'}`,'+est');
+    log('MEXC','trade',`✔ FILLED · ${d.order?.executedQty} ${ACTIVE_COIN.base} for ${d.order?.cummulativeQuoteQty} USDT`);
+    if(d.oco){
+      log('MEXC','info',`🛡 Exit armed (${d.oco.algoId||d.oco.orderListId}) — TP/SL fire automatically, bot can be closed`);
+      updateOrderStatus('mexc','filled',`Exit ${d.oco.algoId||d.oco.orderListId}`,'protected');
+    } else {
+      const why = d.ocoError ? JSON.stringify(d.ocoError) : 'no SL/TP sent';
+      log('MEXC','warn',`⚠ POSITION UNPROTECTED — ${why}. Use ✖ Close Position.`);
+      updateOrderStatus('mexc','error','NO EXIT','unprotected');
+      alert('MEXC trade filled but the stop-loss/take-profit FAILED.\n\n'+why+'\n\nClose it with ✖ Close Position.');
+    }
     return d;
   }
 }
 
-// ── Manual exit: cancel the OCO and market-sell the coin on Binance ──
+// ── Manual exit on every enabled exchange: cancel exit orders, market-sell the coin ──
 async function closeBinancePosition(){
-  const ex=EXCHANGES.binance, proxy=SETTINGS.proxyUrl, secret=SETTINGS.botSecret;
-  if(!proxy||!secret||!ex?.key||!ex?.secret){ alert('Binance API keys and proxy must be set first.'); return; }
-  if(!confirm(`Market-SELL all ${ACTIVE_COIN.base} on Binance and cancel its open exit orders?`)) return;
-  try{
-    const r=await fetch(proxy+'/binance/close',{method:'POST',
-      headers:{'Content-Type':'application/json','X-Bot-Secret':secret},
-      body:JSON.stringify({apiKey:ex.key,apiSecret:ex.secret,symbol:ACTIVE_COIN.symbol})});
-    const d=await r.json();
-    if(!d.ok) throw new Error(JSON.stringify(d.error));
-    if(d.closed){
-      log('BINANCE','trade',`✖ CLOSED ${ACTIVE_COIN.base} — sold ${d.order.executedQty} for ${d.order.cummulativeQuoteQty} USDT (cancelled ${d.cancelled} exit orders)`);
-      updateOrderStatus('binance','idle','Position closed','—');
-    } else log('BINANCE','info',d.note||'Nothing to close');
-  }catch(e){ log('BINANCE','warn','Close failed: '+e.message); alert('Close failed: '+e.message); }
+  const proxy=SETTINGS.proxyUrl, secret=SETTINGS.botSecret;
+  if(!proxy||!secret){ alert('Proxy URL and secret must be set first.'); return; }
+  const live=Object.entries(EXCHANGES).filter(([n,e])=>e.enabled);
+  if(!live.length){ alert('No exchange is enabled.'); return; }
+  if(!confirm(`Market-SELL all ${ACTIVE_COIN.base} on ${live.map(([n])=>n.toUpperCase()).join(', ')} and cancel its exit orders?`)) return;
+  for(const [name,ex] of live){
+    const body = name==='binance' ? {apiKey:ex.key,apiSecret:ex.secret,symbol:ACTIVE_COIN.symbol}
+               : name==='okx'     ? {apiKey:ex.key,apiSecret:ex.secret,passphrase:ex.passphrase,instId:ACTIVE_COIN.base+'-USDT'}
+               :                    {symbol:ACTIVE_COIN.symbol};
+    try{
+      const r=await fetch(proxy+'/'+name+'/close',{method:'POST',
+        headers:{'Content-Type':'application/json','X-Bot-Secret':secret},body:JSON.stringify(body)});
+      const d=await r.json();
+      if(!d.ok) throw new Error(JSON.stringify(d.error));
+      if(d.closed){
+        log(name.toUpperCase(),'trade',`✖ CLOSED ${ACTIVE_COIN.base} — sold ${d.order.executedQty} (cancelled ${d.cancelled} exit orders)`);
+        updateOrderStatus(name,'idle','Position closed','—');
+      } else log(name.toUpperCase(),'info',d.note||'Nothing to close');
+    }catch(e){ log(name.toUpperCase(),'warn','Close failed: '+e.message); alert(name.toUpperCase()+' close failed: '+e.message); }
+  }
 }
 
 // ─── ORDER STATUS UI ─────────────────────────────────────────
