@@ -1385,6 +1385,12 @@ setTimeout(() => {
   <div class="modal modal-wide">
     <div class="modal-hdr"><span>🔑 Exchange API Management</span><button class="modal-close" onclick="closeModal('modal-exchange')">✕</button></div>
     <div class="modal-body">
+      <div class="info-box" style="border-color:var(--red2);color:var(--text);">
+        ⚠ <b>This is the browser strategy, not the AI Autopilot.</b> Switching an exchange ON here lets this page place
+        <b>REAL orders</b> on its own signals while it is open — using the keys below or, if empty, the keys stored on Railway.
+        It ignores the Autopilot's paper mode. Keep these OFF unless you mean to run this strategy live;
+        the AI Autopilot is controlled in 🤖.
+      </div>
       <div class="exchange-tabs">
         <button class="etab active" onclick="switchExTab(this,'binance')">Binance</button>
         <button class="etab" onclick="switchExTab(this,'okx')">OKX</button>
@@ -1399,8 +1405,8 @@ setTimeout(() => {
             <div style="font-size:0.65rem;color:var(--muted2)">Spot trading only</div>
           </div>
           <div class="toggle-wrap" style="margin-left:auto">
-            <label class="toggle"><input type="checkbox" id="binance-enabled" checked onchange="toggleExchange('binance')"/><span class="toggle-slider"></span></label>
-            <span id="binance-status-lbl" style="font-size:0.68rem;color:var(--green)">ENABLED</span>
+            <label class="toggle"><input type="checkbox" id="binance-enabled" onchange="toggleExchange('binance')"/><span class="toggle-slider"></span></label>
+            <span id="binance-status-lbl" style="font-size:0.68rem;color:var(--muted2)">DISABLED</span>
           </div>
         </div>
         <div class="form-row"><label>API Key</label><input type="text" id="binance-key" placeholder="Paste Binance API Key…"/></div>
@@ -2310,7 +2316,8 @@ let SETTINGS = {
 
 // ─── EXCHANGE CONFIG ──────────────────────────────────────────
 let EXCHANGES = {
-  binance: { enabled: true,  key: '', secret: '', mode: 'spot-live', symbol: 'BTCUSDT', connected: false },
+  // All off by default: the browser strategy only trades where you switch it on here.
+  binance: { enabled: false, key: '', secret: '', mode: 'spot-live', symbol: 'BTCUSDT', connected: false },
   okx:     { enabled: false, key: '', secret: '', passphrase: '', mode: 'spot-live', connected: false },
   mexc:    { enabled: false, key: '', secret: '', mode: 'spot-live', connected: false },
 };
@@ -4307,6 +4314,11 @@ function saveExchange(name){
 
 function toggleExchange(name){
   EXCHANGES[name].enabled = document.getElementById(`${name}-enabled`).checked;
+  if(EXCHANGES[name].enabled && !confirm(`Enable ${name.toUpperCase()} for the BROWSER strategy?\n\nWhile this page is open it will place REAL orders on its own signals, using the keys in 🔑 or the keys stored on Railway. It ignores the AI Autopilot's paper mode.\n\nThe AI Autopilot does not need this — it is controlled in 🤖.`)){
+    EXCHANGES[name].enabled = false;
+    document.getElementById(`${name}-enabled`).checked = false;
+    return;
+  }
   const lbl=document.getElementById(`${name}-status-lbl`);
   lbl.textContent=EXCHANGES[name].enabled?'ENABLED':'DISABLED';
   lbl.style.color=EXCHANGES[name].enabled?'var(--green)':'var(--muted2)';
@@ -4327,19 +4339,38 @@ function toggleExchangeFromChip(name){
   toggleExchange(name);
 }
 
+// Real check: asks the exchange for the account balance through the Railway proxy.
+// Keys typed in this form are used if present; otherwise the proxy uses the keys stored on Railway.
 async function testConnection(name){
   const el=document.getElementById(`${name}-conn-status`);
-  el.textContent='Testing…';el.style.color='var(--yellow)';
-  await new Promise(r=>setTimeout(r,1200));
-  if(STATE.price){
-    el.textContent='✔ Connected (market data OK)';
-    el.style.color='var(--green)';
-    EXCHANGES[name].connected=true;
-    log(name.toUpperCase(),'info',`${name} connection test OK`);
-  } else {
-    el.textContent='✗ No data';
-    el.style.color='var(--red)';
-  }
+  const set=(t,c)=>{ el.textContent=t; el.style.color=c; };
+  if(!SETTINGS.proxyUrl || !SETTINGS.botSecret){ set('✗ Set the Railway proxy URL and Bot Secret in ⚙ Settings first','var(--red)'); return; }
+  set('Testing…','var(--yellow)');
+  const val=id=>(document.getElementById(id)?.value||'').trim();
+  const body={};
+  if(val(`${name}-key`))    body.apiKey=val(`${name}-key`);
+  if(val(`${name}-secret`)) body.apiSecret=val(`${name}-secret`);
+  if(name==='okx' && val('okx-passphrase')) body.passphrase=val('okx-passphrase');
+  try {
+    const r=await fetch(SETTINGS.proxyUrl+`/${name}/balance`,{ method:'POST',
+      headers:{ 'Content-Type':'application/json', 'X-Bot-Secret':SETTINGS.botSecret }, body:JSON.stringify(body) });
+    const d=await r.json().catch(()=>({}));
+    if(r.ok && d.ok!==false){
+      let usdt='?';
+      if(name==='binance') usdt=d.usdt;
+      if(name==='mexc')    usdt=(d.data?.balances||[]).find(b=>b.asset==='USDT')?.free ?? '0';
+      if(name==='okx')     usdt=(d.data?.[0]?.details||[]).find(b=>b.ccy==='USDT')?.availBal ?? '0';
+      set(`✔ Keys accepted · free USDT: ${(+usdt||0).toFixed(2)}`,'var(--green)');
+      EXCHANGES[name].connected=true;
+      log(name.toUpperCase(),'info',`${name} API keys accepted · free USDT ${(+usdt||0).toFixed(2)}`);
+    } else {
+      const err = r.status===401 ? 'wrong Bot Secret (⚙ Settings)'
+                : typeof d.error==='string' ? d.error : JSON.stringify(d.error||('HTTP '+r.status));
+      set('✗ '+String(err).slice(0,160),'var(--red)');
+      EXCHANGES[name].connected=false;
+      log(name.toUpperCase(),'warn',`${name} key test failed: ${String(err).slice(0,160)}`);
+    }
+  } catch(e){ set('✗ Cannot reach the Railway proxy','var(--red)'); }
 }
 
 function switchExTab(btn, name){
