@@ -1757,6 +1757,12 @@ setTimeout(() => {
 
 <!-- ══ EXCHANGE STATUS BAR ══ -->
 <div class="exchange-bar">
+  <div class="ex-chip" id="chip-autopilot" onclick="homeShowHome()" style="cursor:pointer;border-color:var(--accent) !important" title="The AI bot that runs on the server — click for the simple view">
+    <div class="ex-chip-dot idle" id="chip-ap-dot"></div>
+    <span class="ex-chip-name">🤖 AI bot</span>
+    <span class="ex-chip-status" id="chip-ap-status" style="color:var(--muted2)">connecting…</span>
+  </div>
+  <span style="font-size:.7rem;color:var(--muted2);margin:0 2px 0 8px;white-space:nowrap" title="A separate, manual strategy that runs only while this page is open. Off on purpose — the AI bot does not need it.">Browser strategy (off on purpose) →</span>
   <div class="ex-chip" id="chip-binance">
     <div class="ex-chip-dot" id="chip-binance-dot"></div>
     <span class="ex-chip-name">Binance</span>
@@ -1780,7 +1786,7 @@ setTimeout(() => {
   </div>
   <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
     <button class="btn btn-sm btn-outline" onclick="openModal('modal-exchange')">+ Add / Edit Exchange</button>
-    <span style="font-size:0.65rem;color:var(--muted2)" id="ex-active-count">1 exchange active</span>
+    <span style="font-size:0.65rem;color:var(--muted2)" id="ex-active-count">browser strategy off</span>
   </div>
 </div>
 
@@ -2746,6 +2752,9 @@ function updateExchangeChip(ex, price, online) {
   const priceEl = document.getElementById(`chip-${ex}-price`);
   const btn = document.querySelector(`#chip-${ex} .ex-chip-btn`);
 
+  const nOn = Object.values(EXCHANGES).filter(e=>e.enabled).length;
+  const cnt = document.getElementById('ex-active-count');
+  if(cnt) cnt.textContent = nOn ? `${nOn} browser exchange${nOn!==1?'s':''} ON` : 'browser strategy off';
   if(!EXCHANGES[ex].enabled) {
     dot.className='ex-chip-dot idle';
     status.textContent='DISABLED';
@@ -2761,9 +2770,6 @@ function updateExchangeChip(ex, price, online) {
     if(priceEl&&price) priceEl.textContent=fmt$(price);
     if(btn) btn.textContent='⏸';
   }
-  // update active count
-  const count = Object.values(EXCHANGES).filter(e=>e.enabled).length;
-  document.getElementById('ex-active-count').textContent = `${count} exchange${count!==1?'s':''} active`;
 }
 
 // ─── CANDLES ──────────────────────────────────────────────────
@@ -7078,8 +7084,23 @@ function homeSaveSettings(){
   homeAct(async()=>{ await apSend(out); homeCloseSettings(); }, 'Settings saved on your bot');
 }
 
+// ── AI bot chip in the Pro view (the exchange chips there are the separate browser strategy) ──
+async function proApUpdate(){
+  const st = document.getElementById('chip-ap-status'), dot = document.getElementById('chip-ap-dot');
+  if(!st || !H$('home').classList.contains('hidden')) return;
+  if(!SETTINGS.proxyUrl || !SETTINGS.botSecret){ st.textContent='not logged in'; dot.className='ex-chip-dot error'; return; }
+  try {
+    AP = await apCall('/autopilot/status');
+    const s = AP.settings, tg = AP.telegram;
+    st.textContent = `${s.enabled ? 'RUNNING' : 'STOPPED'} · ${s.mode==='live' ? 'REAL MONEY' : 'PRACTICE'} · ${s.exchange.toUpperCase()} · 📱 ${tg && tg.linked ? 'alerts on' : 'alerts off'}`;
+    st.style.color = s.enabled ? 'var(--green)' : 'var(--muted2)';
+    dot.className = s.enabled ? 'ex-chip-dot' : 'ex-chip-dot idle';
+  } catch(e){ st.textContent = 'unreachable'; st.style.color='var(--red)'; dot.className='ex-chip-dot error'; }
+}
+setInterval(proApUpdate, 30000);
+
 // ── views ──
-function homeShowPro(){ H$('home').classList.add('hidden'); H$('home-back').style.display='block'; try{ localStorage.setItem('fb_view','pro'); }catch(e){} }
+function homeShowPro(){ H$('home').classList.add('hidden'); H$('home-back').style.display='block'; try{ localStorage.setItem('fb_view','pro'); }catch(e){} proApUpdate(); }
 function homeShowHome(){ H$('home').classList.remove('hidden'); H$('home-back').style.display='none'; try{ localStorage.setItem('fb_view','home'); }catch(e){} homeRefresh(); }
 
 (function homeInit(){
