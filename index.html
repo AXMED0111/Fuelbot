@@ -4253,6 +4253,7 @@ function saveRiskSettings(){
   SETTINGS.proxyUrl  = document.getElementById('set-proxy-url').value.trim().replace(/\/$/,'');
   SETTINGS.botSecret = document.getElementById('set-bot-secret').value.trim();
   try { localStorage.setItem('fb_bot_secret', SETTINGS.botSecret); } catch(e){}
+  checkProxy();
   document.getElementById('daily-max').textContent=SETTINGS.maxTrades;
   const proxyOk = !!SETTINGS.proxyUrl && !!SETTINGS.botSecret;
   log('SETTINGS','info',`Risk updated · Proxy: ${proxyOk ? '✔ configured' : '✗ not set'}`);
@@ -4773,7 +4774,7 @@ function fmtCoin(v) {
 // ─── INIT ─────────────────────────────────────────────────────
 log('BOOT','info','FuelBot PRO v5 — Multi-Coin · Multi-Exchange · GMT+3');
 // Update proxy pill
-(function checkProxy(){
+function checkProxy(){
   const pill = document.getElementById('proxy-pill');
   const dot  = document.getElementById('proxy-dot');
   const txt  = document.getElementById('proxy-pill-txt');
@@ -4795,7 +4796,8 @@ log('BOOT','info','FuelBot PRO v5 — Multi-Coin · Multi-Exchange · GMT+3');
     txt.style.color='var(--red)';
     pill.title='No proxy configured — simulation only. Add Railway URL in ⚙ Settings.';
   }
-})();
+}
+checkProxy();
 log('SPOT','info','SPOT ONLY · 6 new enhancements active · data-proven by 4-month backtest');
   log('INFO','info','v6 changes: BOR score removed · Asian session removed · 6 losing coins demoted · mandatory filter gate');
   log('INFO','info','Sessions: 4AM⭐ · 4PM⭐ · London 8-10AM · NY 14-16PM (Asian removed) · score≥'+SETTINGS.minScore);
