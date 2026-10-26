@@ -1435,6 +1435,24 @@ setTimeout(() => {
         <div class="form-row"><label>Max stop distance (%)</label><input type="number" id="ap-maxStopLossPct" min="0.1" step="0.1"/></div>
       </div>
 
+      <div class="ap-sec">Strategy</div>
+      <div class="ap-grid">
+        <div class="form-row"><label>Who decides trades</label><select id="ap-strategy"><option value="ai">🤖 AI bot (DeepSeek)</option><option value="classic">📏 Classic rules (original strategy)</option></select></div>
+      </div>
+      <div class="ap-sec">Classic rules</div>
+      <div class="ap-grid">
+        <div class="form-row"><label>Check every (minutes)</label><input type="number" id="ap-classicIntervalMinutes" min="1" max="60" step="1"/></div>
+        <div class="form-row"><label>Score needed (0–10)</label><input type="number" id="ap-classicMinScore" min="0" max="10" step="0.5"/></div>
+        <div class="form-row"><label>Score needed Mon/Tue</label><input type="number" id="ap-classicWeakDayScore" min="0" max="10" step="0.5"/></div>
+        <div class="form-row"><label>Volume spike needed (×)</label><input type="number" id="ap-classicVolSpike" min="0" step="0.1"/></div>
+        <div class="form-row"><label>Target (× risk)</label><input type="number" id="ap-classicRR" min="0.5" step="0.5"/></div>
+        <div class="form-row"><label>Stop: ATR multiple</label><input type="number" id="ap-classicAtrMult" min="0.2" step="0.1"/></div>
+        <label class="ap-chk"><input type="checkbox" id="ap-classicSessionsOnly"/> Only in its sessions (GMT+3)</label>
+        <label class="ap-chk"><input type="checkbox" id="ap-classicConfirm"/> Wait one more candle to confirm</label>
+        <label class="ap-chk"><input type="checkbox" id="ap-classicLiqFilter"/> Block during BTC long-liquidation cascades</label>
+        <label class="ap-chk"><input type="checkbox" id="ap-classicNewsPause"/> News pause (no new buys)</label>
+      </div>
+
       <div class="ap-sec">Extras</div>
       <div class="ap-grid">
         <label class="ap-chk"><input type="checkbox" id="ap-useSentiment"/> Give the AI Fear &amp; Greed + funding rate</label>
@@ -1482,8 +1500,9 @@ setTimeout(() => {
       <div class="info-box" style="border-color:var(--red2);color:var(--text);">
         ⚠ <b>This is the browser strategy, not the AI Autopilot.</b> Switching an exchange ON here lets this page place
         <b>REAL orders</b> on its own signals while it is open — using the keys below or, if empty, the keys stored on Railway.
-        It ignores the Autopilot's paper mode. Keep these OFF unless you mean to run this strategy live;
-        the AI Autopilot is controlled in 🤖.
+        It ignores the Autopilot's paper mode. Keep these OFF.
+        <br>👉 To run this same strategy <b>24/7 on the server</b> (no page open, with practice mode and Telegram alerts),
+        choose <b>📏 Classic rules</b> under Strategy in the simple view's ⚙ Settings or in 🤖.
       </div>
       <div class="exchange-tabs">
         <button class="etab active" onclick="switchExTab(this,'binance')">Binance</button>
@@ -1759,7 +1778,7 @@ setTimeout(() => {
 <div class="exchange-bar">
   <div class="ex-chip" id="chip-autopilot" onclick="homeShowHome()" style="cursor:pointer;border-color:var(--accent) !important" title="The AI bot that runs on the server — click for the simple view">
     <div class="ex-chip-dot idle" id="chip-ap-dot"></div>
-    <span class="ex-chip-name">🤖 AI bot</span>
+    <span class="ex-chip-name">🤖 Server bot</span>
     <span class="ex-chip-status" id="chip-ap-status" style="color:var(--muted2)">connecting…</span>
   </div>
   <span style="font-size:.7rem;color:var(--muted2);margin:0 2px 0 8px;white-space:nowrap" title="A separate, manual strategy that runs only while this page is open. Off on purpose — the AI bot does not need it.">Browser strategy (off on purpose) →</span>
@@ -4558,10 +4577,10 @@ function drawChart(){
 // ═══════════════════════════════════════════════════════════════
 const AP_TFS = ['1m','5m','15m','30m','1h','4h','1d'];
 const AP_MODELS = { deepseek:['deepseek-chat','deepseek-reasoner'], anthropic:['claude-sonnet-5-5','claude-opus-5-5','claude-haiku-5-5'], openai:['gpt-4o-mini','gpt-4o'] };
-const AP_NUM  = ['dailySummaryHourUTC','aiCostPer1MInput','aiCostPer1MOutput','adxTrendLevel','downtrendConfidenceBoost','highVolSizeMult','memoryTrades','streakConfidenceStep','streakSizeCutPct','lossStreakPause','pauseMinutes','minStopAtr','maxStopAtr','riskPerTradeUSDT','minTradeSizeUSDT','breakEvenAtR','trailStartAtR','trailAtrMult','maxHoldHours','intervalMinutes','candleCount','aiTemperature','aiMaxTokens','minConfidence','stopLossPct','takeProfitPct','tradeSizeUSDT','maxOpenPositions','maxTradesPerDay','dailyLossLimitUSDT','minRiskReward','cooldownMinutes','minStopLossPct','maxStopLossPct','paperBalanceUSDT','feePct'];
-const AP_SEL  = ['mode','exchange','timeframe','higherTimeframe','macroTimeframe','aiProvider','sizingMode','secondOpinion'];
+const AP_NUM  = ['classicIntervalMinutes','classicMinScore','classicWeakDayScore','classicVolSpike','classicRR','classicAtrMult','dailySummaryHourUTC','aiCostPer1MInput','aiCostPer1MOutput','adxTrendLevel','downtrendConfidenceBoost','highVolSizeMult','memoryTrades','streakConfidenceStep','streakSizeCutPct','lossStreakPause','pauseMinutes','minStopAtr','maxStopAtr','riskPerTradeUSDT','minTradeSizeUSDT','breakEvenAtR','trailStartAtR','trailAtrMult','maxHoldHours','intervalMinutes','candleCount','aiTemperature','aiMaxTokens','minConfidence','stopLossPct','takeProfitPct','tradeSizeUSDT','maxOpenPositions','maxTradesPerDay','dailyLossLimitUSDT','minRiskReward','cooldownMinutes','minStopLossPct','maxStopLossPct','paperBalanceUSDT','feePct'];
+const AP_SEL  = ['strategy','mode','exchange','timeframe','higherTimeframe','macroTimeframe','aiProvider','sizingMode','secondOpinion'];
 const AP_TXT  = ['aiModel','customInstructions','secondModel','mexcKeyCreated'];
-const AP_BOOL = ['useSentiment','shadowBaseline','notifyTrades','notifyErrors','secondOnlyLive','allowBuy','allowAiSell','allowAiTighten','useAiLevels','adaptiveRegime','blockBuysInDowntrend','btcFilter','blockAltsWhenBtcDown','adaptiveInterval','learnFromHistory','adaptiveRisk','atrStops','breakEven','trailingStop'];
+const AP_BOOL = ['classicSessionsOnly','classicConfirm','classicLiqFilter','classicNewsPause','useSentiment','shadowBaseline','notifyTrades','notifyErrors','secondOnlyLive','allowBuy','allowAiSell','allowAiTighten','useAiLevels','adaptiveRegime','blockBuysInDowntrend','btcFilter','blockAltsWhenBtcDown','adaptiveInterval','learnFromHistory','adaptiveRisk','atrStops','breakEven','trailingStop'];
 let AP = null, apTimer = null;
 
 const apEsc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -6648,6 +6667,13 @@ function toggleStargatePanel() {
           </div>
           <div class="big"><span class="pulse"></span><span id="hm-state">—</span></div>
           <p class="h-sub" id="hm-state-sub">—</p>
+          <div class="row" style="margin-top:10px">
+            <span class="h-sub" style="font-weight:600">Strategy</span>
+            <div class="h-seg" role="group" aria-label="Strategy">
+              <button id="hm-s-ai" onclick="homeSetStrategy('ai')" title="DeepSeek AI decides, with adaptive safety rules">🤖 AI bot</button>
+              <button id="hm-s-classic" onclick="homeSetStrategy('classic')" title="The dashboard's original rule strategy, now on the server 24/7">📏 Classic rules</button>
+            </div>
+          </div>
           <div class="row">
             <button class="h-btn primary" id="hm-start" onclick="homeStartStop()">Start</button>
             <div class="h-seg" role="group" aria-label="Money mode">
@@ -6662,12 +6688,18 @@ function toggleStargatePanel() {
         </div>
         <div class="h-card">
           <h3>How your bot works</h3>
-          <p class="h-sub" style="margin-bottom:12px">Every few minutes, for each coin:</p>
-          <div class="h-steps">
+          <p class="h-sub" style="margin-bottom:12px" id="hm-how-sub">Every few minutes, for each coin:</p>
+          <div class="h-steps" id="hm-how-ai">
             <div class="h-step"><b>1 · Reads the market</b>Prices on 3 timeframes, trend, volatility</div>
             <div class="h-step"><b>2 · AI decides</b>DeepSeek says Buy, Sell or Wait — and why</div>
             <div class="h-step"><b>3 · Safety check</b>Your limits can veto any AI decision</div>
             <div class="h-step"><b>4 · Trades safely</b>Every buy gets a stop-loss and a target</div>
+          </div>
+          <div class="h-steps" id="hm-how-classic" style="display:none">
+            <div class="h-step"><b>1 · Its hours</b>Trades in sessions (GMT+3): 4:00 &amp; 16:00 peaks, 8–10, 14–16</div>
+            <div class="h-step"><b>2 · Scores 0–10</b>Green candles, momentum, volume spike, RSI, 4h trend, breakout</div>
+            <div class="h-step"><b>3 · Confirms</b>Waits one more 15-min candle before buying</div>
+            <div class="h-step"><b>4 · Trades safely</b>Stop under the candle low / 2×ATR, target 3× the risk</div>
           </div>
           <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
             <button class="h-btn danger" onclick="homeKill()" title="Stops the bot immediately">⛔ Emergency stop</button>
@@ -6684,7 +6716,7 @@ function toggleStargatePanel() {
       </div>
 
       <div class="h-card" style="margin-bottom:16px">
-        <div class="h-head" style="margin-bottom:10px"><div><h3>Your safety rules</h3><p class="h-sub">The AI can only trade inside these limits — change them in ⚙ Settings</p></div>
+        <div class="h-head" style="margin-bottom:10px"><div><h3>Your safety rules</h3><p class="h-sub">The bot can only trade inside these limits — change them in ⚙ Settings</p></div>
           <span class="h-badge b-dim" id="hm-style"></span></div>
         <div id="hm-rules" style="display:flex;flex-wrap:wrap;gap:8px"></div>
       </div>
@@ -6698,7 +6730,7 @@ function toggleStargatePanel() {
           <div id="hm-percoin" style="margin-top:12px"></div>
         </div>
         <div class="h-card">
-          <div class="h-head"><div><h3>Is the AI worth it?</h3><p class="h-sub">The AI's trades vs a simple rule-based strategy, practice-traded at the same time</p></div></div>
+          <div class="h-head"><div><h3>Which strategy works?</h3><p class="h-sub">AI bot vs Classic rules vs a simple shadow strategy practice-traded alongside the AI</p></div></div>
           <div id="hm-vs"></div>
           <div class="h-sub" id="hm-aicost" style="margin-top:14px"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
@@ -6722,7 +6754,7 @@ function toggleStargatePanel() {
 
       <div class="h-cols">
         <div class="h-card">
-          <div class="h-head"><div><h3>What the AI is thinking</h3><p class="h-sub">Every decision, in plain words — newest first</p></div></div>
+          <div class="h-head"><div><h3 id="hm-feed-title">What the AI is thinking</h3><p class="h-sub">Every decision, in plain words — newest first</p></div></div>
           <div class="h-feed" id="hm-feed"></div>
         </div>
         <div class="h-card">
@@ -6739,7 +6771,13 @@ function toggleStargatePanel() {
       <div class="h-head"><div><h3 style="font-size:20px">Settings</h3><p class="h-sub">The essentials. Every detail is under “All settings”.</p></div>
         <button class="h-btn ghost" onclick="homeCloseSettings()">✕</button></div>
 
-      <div class="h-field"><label>Trading style</label>
+      <div class="h-field"><label>Strategy</label>
+        <div class="h-presets" style="grid-template-columns:1fr 1fr">
+          <button class="h-preset" id="hm-st-ai" onclick="homePickStrategy('ai')"><b>🤖 AI bot</b><span>DeepSeek decides · every 15 min</span></button>
+          <button class="h-preset" id="hm-st-classic" onclick="homePickStrategy('classic')"><b>📏 Classic rules</b><span>Original strategy · every minute in its sessions</span></button>
+        </div>
+        <p class="h-sub">Only one trades at a time, on the same account, 24/7 on the server — no need to keep this page open.</p></div>
+      <div class="h-field"><label>Trading style <span class="h-sub" style="font-weight:400">(AI bot)</span></label>
         <div class="h-presets" id="hm-presets">
           <button class="h-preset" data-p="careful"><b>🛡 Careful</b><span>Fewer, surer trades</span></button>
           <button class="h-preset" data-p="balanced"><b>⚖ Balanced</b><span>Recommended</span></button>
@@ -6798,6 +6836,7 @@ function homeOutcome(o, d){
   o = String(o||''); const coin = hCoin(d.symbol);
   const m = (re) => o.match(re);
   let r;
+  if(d.setup==='classic' && (o==='hold' || o==='holding position')) return (o==='holding position' ? 'Keeping the open trade · ' : '') + (d.reason || 'Waiting');
   if(o==='hold') return 'Waiting — no good opportunity right now';
   if(o==='holding position') return 'Keeping the open trade';
   if(o.startsWith('opened')) return `Bought ${coin}${/paper/.test(o)?' (practice)':''}`;
@@ -6883,11 +6922,17 @@ function homeRender(){
   const sb = H$('hm-start'); sb.textContent = on ? '⏸ Stop' : '▶ Start'; sb.classList.toggle('primary', !on);
   H$('hm-mode-badge').className = 'h-badge ' + (live?'b-live':'b-paper');
   H$('hm-mode-badge').textContent = live ? 'Real money' : 'Practice money';
-  H$('hm-ai-badge').textContent = `AI · ${s.aiProvider==='deepseek'?'DeepSeek':s.aiProvider==='anthropic'?'Claude':'OpenAI'}`;
+  const cl = s.strategy === 'classic';
+  H$('hm-ai-badge').textContent = cl ? '📏 Classic rules' : `🤖 AI · ${s.aiProvider==='deepseek'?'DeepSeek':s.aiProvider==='anthropic'?'Claude':'OpenAI'}`;
+  H$('hm-s-ai').className = cl ? '' : 'on'; H$('hm-s-classic').className = cl ? 'on' : '';
+  H$('hm-how-ai').style.display = cl ? 'none' : ''; H$('hm-how-classic').style.display = cl ? '' : 'none';
+  H$('hm-feed-title').textContent = cl ? 'What the strategy is doing' : 'What the AI is thinking';
+  H$('hm-how-sub').textContent = cl ? 'Every minute, for each coin:' : 'Every few minutes, for each coin:';
   H$('hm-m-paper').className = live ? '' : 'on';
   H$('hm-m-live').className  = live ? 'on live' : '';
   const dToday = (AP.decisions||[]).filter(d => new Date(d.at).toDateString() === new Date().toDateString()).length;
-  H$('hm-last').textContent = AP.lastRun ? `Last AI check ${hAgo(AP.lastRun)} · ${dToday} decision${dToday===1?'':'s'} today · ${s.exchange.toUpperCase()} · every ${s.intervalMinutes} min` : `No AI check yet since the last restart · ${s.exchange.toUpperCase()} · every ${s.intervalMinutes} min`;
+  const every = s.strategy==='classic' ? s.classicIntervalMinutes : s.intervalMinutes, who = s.strategy==='classic' ? 'Last check' : 'Last AI check';
+  H$('hm-last').textContent = AP.lastRun ? `${who} ${hAgo(AP.lastRun)} · ${dToday} decision${dToday===1?'':'s'} logged today · ${s.exchange.toUpperCase()} · every ${every} min` : `No check yet since the last restart · ${s.exchange.toUpperCase()} · every ${every} min`;
   const halt = AP.haltReason || (AP.adaptive?.pausedUntil ? `Paused after ${AP.adaptive.lossStreak} losses in a row until ${new Date(AP.adaptive.pausedUntil).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}` : '');
   H$('hm-halt').style.display = halt ? '' : 'none'; H$('hm-halt').textContent = halt ? '⛔ '+halt : '';
 
@@ -6902,9 +6947,19 @@ function homeRender(){
 
   // safety rules
   const style = homeDetectPreset(s);
-  H$('hm-style').textContent = {careful:'🛡 Careful',balanced:'⚖ Balanced',aggressive:'🚀 Bold',custom:'Custom'}[style];
+  H$('hm-style').textContent = s.strategy==='classic' ? '📏 Classic rules' : {careful:'🛡 Careful',balanced:'⚖ Balanced',aggressive:'🚀 Bold',custom:'Custom'}[style];
   const rule = (t, ok=true) => `<span class="h-badge ${ok?'b-dim':'b-down'}" style="text-transform:none;font-size:13px;font-weight:600;padding:7px 12px">${t}</span>`;
-  H$('hm-rules').innerHTML = [
+  H$('hm-rules').innerHTML = s.strategy==='classic' ? [
+    rule(`💵 $${s.tradeSizeUSDT} per trade`),
+    rule(`📦 Max ${s.maxOpenPositions} open trades`),
+    rule(`🧯 Stops for the day at −$${s.dailyLossLimitUSDT}`),
+    rule(`🎯 Score ${s.classicMinScore}+/10 (${s.classicWeakDayScore}+ Mon/Tue)`),
+    rule(s.classicSessionsOnly ? '🕓 Only in its sessions (GMT+3)' : '🕓 Any time of day', s.classicSessionsOnly),
+    rule(`📊 Volume ≥ ${s.classicVolSpike}× · RSI zone · 4h trend · breakout`),
+    rule(s.classicConfirm ? '✅ Waits one candle to confirm' : 'No confirm candle', s.classicConfirm),
+    rule(`⚖ Target ${s.classicRR}× the risk`),
+    rule(s.classicNewsPause ? '📰 News pause ON — no buys' : '📰 News pause off', !s.classicNewsPause),
+  ].join('') : [
     rule(`💵 $${s.tradeSizeUSDT} per trade`),
     rule(`📦 Max ${s.maxOpenPositions} open trades`),
     rule(`🧯 Stops for the day at −$${s.dailyLossLimitUSDT}`),
@@ -6926,7 +6981,10 @@ function homeRender(){
     else if(sym!=='BTCUSDT' && btc?.trend==='downtrend' && s.blockAltsWhenBtcDown && s.btcFilter) can = '🚫 Waiting — Bitcoin is falling';
     else if(r.volatility==='high') can = '⚠ Can buy, smaller size';
     const last = (AP.decisions||[]).find(d => d.symbol===sym && d.action!=='ERROR');
-    const ai = last ? `AI: ${last.action==='BUY'?'Buy':last.action==='SELL'?'Sell':'Wait'} · ${hEsc(last.confidence)}% sure` : 'AI: no view yet';
+    const cl = s.strategy==='classic', lastCl = cl ? (AP.decisions||[]).find(d => d.symbol===sym && d.setup==='classic') : null;
+    if(cl) can = lastCl ? hEsc(lastCl.reason.replace(/^Buy setup found — /,'').slice(0,90)) : 'First check pending';
+    const ai = cl ? (lastCl && lastCl.confidence!=null ? `Classic score ${(lastCl.confidence/10).toFixed(1)}/10` : 'Classic: no check yet')
+                  : last ? `AI: ${last.action==='BUY'?'Buy':last.action==='SELL'?'Sell':'Wait'} · ${hEsc(last.confidence)}% sure` : 'AI: no view yet';
     const ch = r && r.change24h!=null ? `<span class="${hCls(r.change24h)}" style="font-weight:700">${r.change24h>=0?'+':''}${Number(r.change24h).toFixed(2)}%</span> <span style="color:var(--h-faint)">24h</span>` : '';
     return `<div class="h-coin"><div class="nm">${hEsc(hCoin(sym))}<span class="h-badge ${tr.c}">${tr.i} ${tr.t}</span></div>
       <div style="margin-top:8px;font-size:18px;font-weight:800">${r && r.price ? hPrice(r.price) : '—'}</div>
@@ -6951,11 +7009,11 @@ function homeRender(){
   H$('hm-feed').innerHTML = AP.decisions.length ? AP.decisions.slice(0,30).map(d=>{
     const a = d.action, ic = a==='BUY'?['ic-buy','↑']:a==='SELL'?['ic-sell','↓']:a==='ERROR'?['ic-err','!']:['ic-wait','…'];
     const label = a==='BUY'?'Buy signal':a==='SELL'?'Sell signal':a==='ERROR'?'Problem':'Wait';
-    const conf = d.confidence!=null && a!=='ERROR' ? `<span class="tm">${hEsc(d.confidence)}% sure <span class="h-meter"><i style="width:${Math.max(0,Math.min(100,+d.confidence||0))}%"></i></span></span>` : '';
+    const conf = d.confidence!=null && a!=='ERROR' ? `<span class="tm">${d.setup==='classic' ? 'score '+(d.confidence/10).toFixed(1)+'/10' : hEsc(d.confidence)+'% sure'} <span class="h-meter"><i style="width:${Math.max(0,Math.min(100,+d.confidence||0))}%"></i></span></span>` : '';
     return `<div class="h-item"><div class="h-ic ${ic[0]}">${ic[1]}</div><div>
       <div class="t1">${hEsc(hCoin(d.symbol))} · ${label} ${conf}<span class="tm" style="margin-left:auto">${hAgo(d.at)}</span></div>
       <div class="t2">${hEsc(homeOutcome(d.outcome, d))}</div>
-      ${d.reason ? `<div class="t3">“${hEsc(d.reason)}”</div>` : ''}</div></div>`;
+      ${d.reason && d.setup!=='classic' ? `<div class="t3">“${hEsc(d.reason)}”</div>` : ''}</div></div>`;
   }).join('') : '<div class="h-empty">The AI checks every few minutes. Its first thoughts will appear here — press 🔍 Check now to see them right away.</div>';
 
   // sentiment, alerts, key expiry
@@ -7007,15 +7065,15 @@ function homeRenderPerf(){
     + box('Fees paid', '$'+a.fees.toFixed(2));
   const coins = Object.entries(p.perCoin||{});
   H$('hm-percoin').innerHTML = coins.length ? `<table class="h-hist">${coins.map(([sym,c])=>`<tr><td><b>${hEsc(hCoin(sym))}</b></td><td>${c.trades} trade${c.trades===1?'':'s'} · ${c.winRate}% won</td><td style="text-align:right" class="${hCls(c.pnl)}"><b>${hMoney(c.pnl)}</b></td></tr>`).join('')}</table>` : '';
-  const r = p.rules, bar = (label, x, col) => {
-    const max = Math.max(Math.abs(a.pnl), Math.abs(r.pnl), 0.01), w = Math.round(Math.abs(x.pnl)/max*100);
+  const r = p.rules, cs = p.classic || { trades:0, wins:0, winRate:0, pnl:0 }, bar = (label, x, col) => {
+    const max = Math.max(Math.abs(a.pnl), Math.abs(r.pnl), Math.abs(cs.pnl), 0.01), w = Math.round(Math.abs(x.pnl)/max*100);
     return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700"><span>${label}</span><span class="${hCls(x.pnl)}">${hMoney(x.pnl)}</span></div>
       <div style="height:10px;border-radius:6px;background:var(--h-card2);margin:6px 0;overflow:hidden"><i style="display:block;height:100%;width:${w}%;background:${x.pnl>=0?'var(--h-green)':'var(--h-red)'}"></i></div>
       <div class="h-sub" style="font-size:12.5px">${x.trades} trades · ${x.winRate}% won${x.profitFactor ? ` · profit factor ${x.profitFactor}` : ''}</div></div>`;
   };
   let verdict = 'Not enough trades yet to compare — give it a few days.';
   if(a.trades >= 5 && r.trades >= 5) verdict = a.pnl > r.pnl ? '✅ So far the AI is doing better than the simple rules.' : '⚠ So far the simple rules are doing as well or better — the AI is not adding value yet.';
-  H$('hm-vs').innerHTML = bar('🤖 AI bot', a) + bar('📏 Simple rules', r) + `<div style="font-weight:600;font-size:14px">${verdict}</div>`;
+  H$('hm-vs').innerHTML = bar('🤖 AI bot', a) + bar('📏 Classic rules', cs) + bar('🧪 Simple rules (practice shadow)', r) + `<div style="font-weight:600;font-size:14px">${verdict}</div>`;
   const u = AP.aiUsage;
   H$('hm-aicost').textContent = u ? `AI cost (estimate): ~$${u.todayCost.toFixed(3)} today · ~$${u.totalCost.toFixed(2)} in total · ${u.todayCalls} AI checks today` : '';
 }
@@ -7039,6 +7097,15 @@ async function homeAct(fn, okMsg){ try { await fn(); if(okMsg) homeToast(okMsg);
 function homeStartStop(){ const on = !AP.settings.enabled;
   homeAct(()=>apSend({ enabled:on }), on ? `Started — ${AP.settings.mode==='live'?'REAL money':'practice mode'}` : 'Stopped. Open trades keep their stop-loss and target.'); }
 function homeSetMode(m){ if(AP.settings.mode===m) return; homeAct(async()=>{ if(!(await apSend({ mode:m }))) throw new Error('Cancelled — still in '+(AP.settings.mode==='live'?'real money':'practice')+' mode'); }, m==='live' ? 'Switched to REAL money' : 'Switched to practice mode'); }
+function homeSetStrategy(st){
+  if(AP.settings.strategy===st) return;
+  const msg = st==='classic' ? 'Switch to 📏 Classic rules?\n\nThe AI stops deciding; the original rule strategy trades instead (in its sessions, checked every minute), 24/7 on the server.'
+                             : 'Switch to 🤖 AI bot?\n\nDeepSeek decides again; the Classic rules stop.';
+  if(!confirm(msg)) return;
+  homeAct(()=>apSend({ strategy: st }), st==='classic' ? 'Classic rules are now trading' : 'AI bot is now trading');
+}
+let homeStratPick = null;
+function homePickStrategy(st){ homeStratPick = st; H$('hm-st-ai').classList.toggle('on', st==='ai'); H$('hm-st-classic').classList.toggle('on', st==='classic'); }
 function homeRunNow(){ homeToast('Asking the AI about every coin…'); homeAct(()=>apCall('/autopilot/run-now'), 'Done — see “What the AI is thinking”'); }
 function homeClose(id){ if(!confirm('Sell this position now at the market price?')) return; homeAct(()=>apCall('/autopilot/close',{ id }), 'Trade closed'); }
 function homeKill(){
@@ -7067,6 +7134,7 @@ function homeOpenSettings(focus){
   if(!AP){ homeToast('Connect to your bot first'); return; }
   const s = AP.settings;
   H$('hm-keydate').value = s.mexcKeyCreated || '';
+  homePickStrategy(s.strategy || 'ai');
   const tg = AP.telegram;
   H$('hm-alerts-state').innerHTML = !tg ? '' : tg.linked ? '<b style="color:var(--h-green)">✔ Connected.</b> You get a message on every trade, problems, and a daily summary.'
     : tg.enabled ? '<b style="color:var(--h-amber)">Almost:</b> the bot token is set — now add TELEGRAM_CHAT_ID (step 3–4).' : '<b>Not set up yet</b> — 2 minutes:';
@@ -7079,7 +7147,7 @@ function homeOpenSettings(focus){
 }
 function homeCloseSettings(){ H$('hm-sheet').classList.remove('open'); }
 function homeSaveSettings(){
-  const out = { symbols:H$('hm-coins-in').value, tradeSizeUSDT:H$('hm-size').value, dailyLossLimitUSDT:H$('hm-loss').value, intervalMinutes:H$('hm-every').value, mexcKeyCreated:H$('hm-keydate').value };
+  const out = { strategy: homeStratPick || AP.settings.strategy, symbols:H$('hm-coins-in').value, tradeSizeUSDT:H$('hm-size').value, dailyLossLimitUSDT:H$('hm-loss').value, intervalMinutes:H$('hm-every').value, mexcKeyCreated:H$('hm-keydate').value };
   if(homePreset && HOME_PRESETS[homePreset]) Object.assign(out, HOME_PRESETS[homePreset]);
   homeAct(async()=>{ await apSend(out); homeCloseSettings(); }, 'Settings saved on your bot');
 }
@@ -7092,7 +7160,7 @@ async function proApUpdate(){
   try {
     AP = await apCall('/autopilot/status');
     const s = AP.settings, tg = AP.telegram;
-    st.textContent = `${s.enabled ? 'RUNNING' : 'STOPPED'} · ${s.mode==='live' ? 'REAL MONEY' : 'PRACTICE'} · ${s.exchange.toUpperCase()} · 📱 ${tg && tg.linked ? 'alerts on' : 'alerts off'}`;
+    st.textContent = `${s.enabled ? 'RUNNING' : 'STOPPED'} · ${s.strategy==='classic' ? 'CLASSIC' : 'AI'} · ${s.mode==='live' ? 'REAL MONEY' : 'PRACTICE'} · ${s.exchange.toUpperCase()} · 📱 ${tg && tg.linked ? 'alerts on' : 'alerts off'}`;
     st.style.color = s.enabled ? 'var(--green)' : 'var(--muted2)';
     dot.className = s.enabled ? 'ex-chip-dot' : 'ex-chip-dot idle';
   } catch(e){ st.textContent = 'unreachable'; st.style.color='var(--red)'; dot.className='ex-chip-dot error'; }
