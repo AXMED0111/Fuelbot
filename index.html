@@ -1276,6 +1276,7 @@ setTimeout(() => {
         <div class="form-row"><label>Candle count</label><input type="number" id="ap-candleCount" min="60" max="1000" step="10"/></div>
         <div class="form-row"><label>Main timeframe</label><select id="ap-timeframe"></select></div>
         <div class="form-row"><label>Trend timeframe</label><select id="ap-higherTimeframe"></select></div>
+        <div class="form-row"><label>Big-picture timeframe</label><select id="ap-macroTimeframe"></select></div>
       </div>
 
       <div class="ap-sec">AI</div>
@@ -1293,14 +1294,59 @@ setTimeout(() => {
         <label class="ap-chk"><input type="checkbox" id="ap-allowBuy"/> AI may open positions (BUY)</label>
         <label class="ap-chk"><input type="checkbox" id="ap-allowAiSell"/> AI may close positions (SELL)</label>
         <label class="ap-chk"><input type="checkbox" id="ap-useAiLevels"/> Use the AI's stop-loss / take-profit</label>
-        <div class="form-row"><label>Min AI confidence (%)</label><input type="number" id="ap-minConfidence" min="0" max="100" step="1"/></div>
+        <div class="form-row"><label>Base min AI confidence (%)</label><input type="number" id="ap-minConfidence" min="0" max="100" step="1"/></div>
         <div class="form-row"><label>Fallback stop-loss (%)</label><input type="number" id="ap-stopLossPct" min="0.1" step="0.1"/></div>
         <div class="form-row"><label>Fallback take-profit (%)</label><input type="number" id="ap-takeProfitPct" min="0.1" step="0.1"/></div>
       </div>
 
+      <div class="ap-sec">🧠 Adaptive brain — reacts to the market</div>
+      <div id="ap-regimes" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
+      <div class="ap-grid">
+        <label class="ap-chk"><input type="checkbox" id="ap-adaptiveRegime"/> Adapt rules to the market regime</label>
+        <label class="ap-chk"><input type="checkbox" id="ap-blockBuysInDowntrend"/> No buys in a downtrend</label>
+        <label class="ap-chk"><input type="checkbox" id="ap-btcFilter"/> Show BTC trend to the AI</label>
+        <label class="ap-chk"><input type="checkbox" id="ap-blockAltsWhenBtcDown"/> No alt-coin buys while BTC falls</label>
+        <label class="ap-chk"><input type="checkbox" id="ap-adaptiveInterval"/> Analyse 2× faster when active/volatile</label>
+        <div class="form-row"><label>ADX level = trending</label><input type="number" id="ap-adxTrendLevel" min="5" max="60" step="1"/></div>
+        <div class="form-row"><label>Downtrend extra confidence (%)</label><input type="number" id="ap-downtrendConfidenceBoost" min="0" max="50" step="1"/></div>
+        <div class="form-row"><label>High-volatility size ×</label><input type="number" id="ap-highVolSizeMult" min="0.05" max="1" step="0.05"/></div>
+      </div>
+
+      <div class="ap-sec">📚 Learning from its own results</div>
+      <div class="ap-grid">
+        <label class="ap-chk"><input type="checkbox" id="ap-learnFromHistory"/> Show the AI its past trades & win rates</label>
+        <label class="ap-chk"><input type="checkbox" id="ap-adaptiveRisk"/> Get more careful after losses</label>
+        <div class="form-row"><label>Trades in AI memory</label><input type="number" id="ap-memoryTrades" min="0" max="50" step="1"/></div>
+        <div class="form-row"><label>+Confidence per loss (%)</label><input type="number" id="ap-streakConfidenceStep" min="0" max="20" step="1"/></div>
+        <div class="form-row"><label>−Size per loss (%)</label><input type="number" id="ap-streakSizeCutPct" min="0" max="90" step="5"/></div>
+        <div class="form-row"><label>Pause after N losses (0=never)</label><input type="number" id="ap-lossStreakPause" min="0" max="50" step="1"/></div>
+        <div class="form-row"><label>Pause length (min)</label><input type="number" id="ap-pauseMinutes" min="0" step="15"/></div>
+      </div>
+
+      <div class="ap-sec">📏 Stops &amp; position size</div>
+      <div class="ap-grid">
+        <label class="ap-chk"><input type="checkbox" id="ap-atrStops"/> Size stops to volatility (ATR)</label>
+        <div class="form-row"><label>Min stop (× ATR)</label><input type="number" id="ap-minStopAtr" min="0" max="10" step="0.1"/></div>
+        <div class="form-row"><label>Max stop (× ATR)</label><input type="number" id="ap-maxStopAtr" min="0.5" max="20" step="0.1"/></div>
+        <div class="form-row"><label>Sizing</label><select id="ap-sizingMode"><option value="fixed">Fixed $ per trade</option><option value="risk">Fixed $ risk at the stop</option></select></div>
+        <div class="form-row"><label>Risk per trade (USDT, risk mode)</label><input type="number" id="ap-riskPerTradeUSDT" min="0.01" step="0.1"/></div>
+        <div class="form-row"><label>Min order size (USDT)</label><input type="number" id="ap-minTradeSizeUSDT" min="0" step="1"/></div>
+      </div>
+
+      <div class="ap-sec">🎯 Trade management</div>
+      <div class="ap-grid">
+        <label class="ap-chk"><input type="checkbox" id="ap-breakEven"/> Move stop to break-even</label>
+        <label class="ap-chk"><input type="checkbox" id="ap-trailingStop"/> Trailing stop</label>
+        <label class="ap-chk"><input type="checkbox" id="ap-allowAiTighten"/> AI may raise the stop</label>
+        <div class="form-row"><label>Break-even after (× risk)</label><input type="number" id="ap-breakEvenAtR" min="0.1" step="0.1"/></div>
+        <div class="form-row"><label>Trail starts after (× risk)</label><input type="number" id="ap-trailStartAtR" min="0.1" step="0.1"/></div>
+        <div class="form-row"><label>Trail distance (× ATR)</label><input type="number" id="ap-trailAtrMult" min="0.2" step="0.1"/></div>
+        <div class="form-row"><label>Max hold (hours, 0=off)</label><input type="number" id="ap-maxHoldHours" min="0" step="1"/></div>
+      </div>
+
       <div class="ap-sec">Risk limits (enforced by code — the AI cannot override)</div>
       <div class="ap-grid">
-        <div class="form-row"><label>Trade size (USDT)</label><input type="number" id="ap-tradeSizeUSDT" min="1" step="1"/></div>
+        <div class="form-row"><label>Trade size / cap (USDT)</label><input type="number" id="ap-tradeSizeUSDT" min="1" step="1"/></div>
         <div class="form-row"><label>Max open positions</label><input type="number" id="ap-maxOpenPositions" min="1" step="1"/></div>
         <div class="form-row"><label>Max trades per day</label><input type="number" id="ap-maxTradesPerDay" min="1" step="1"/></div>
         <div class="form-row"><label>Daily loss limit (USDT) → auto OFF</label><input type="number" id="ap-dailyLossLimitUSDT" min="1" step="1"/></div>
@@ -4371,10 +4417,10 @@ function drawChart(){
 // ═══════════════════════════════════════════════════════════════
 const AP_TFS = ['1m','5m','15m','30m','1h','4h','1d'];
 const AP_MODELS = { deepseek:['deepseek-chat','deepseek-reasoner'], anthropic:['claude-sonnet-5-5','claude-opus-5-5','claude-haiku-5-5'], openai:['gpt-4o-mini','gpt-4o'] };
-const AP_NUM  = ['intervalMinutes','candleCount','aiTemperature','aiMaxTokens','minConfidence','stopLossPct','takeProfitPct','tradeSizeUSDT','maxOpenPositions','maxTradesPerDay','dailyLossLimitUSDT','minRiskReward','cooldownMinutes','minStopLossPct','maxStopLossPct','paperBalanceUSDT','feePct'];
-const AP_SEL  = ['mode','exchange','timeframe','higherTimeframe','aiProvider'];
+const AP_NUM  = ['adxTrendLevel','downtrendConfidenceBoost','highVolSizeMult','memoryTrades','streakConfidenceStep','streakSizeCutPct','lossStreakPause','pauseMinutes','minStopAtr','maxStopAtr','riskPerTradeUSDT','minTradeSizeUSDT','breakEvenAtR','trailStartAtR','trailAtrMult','maxHoldHours','intervalMinutes','candleCount','aiTemperature','aiMaxTokens','minConfidence','stopLossPct','takeProfitPct','tradeSizeUSDT','maxOpenPositions','maxTradesPerDay','dailyLossLimitUSDT','minRiskReward','cooldownMinutes','minStopLossPct','maxStopLossPct','paperBalanceUSDT','feePct'];
+const AP_SEL  = ['mode','exchange','timeframe','higherTimeframe','macroTimeframe','aiProvider','sizingMode'];
 const AP_TXT  = ['aiModel','customInstructions'];
-const AP_BOOL = ['allowBuy','allowAiSell','useAiLevels'];
+const AP_BOOL = ['allowBuy','allowAiSell','allowAiTighten','useAiLevels','adaptiveRegime','blockBuysInDowntrend','btcFilter','blockAltsWhenBtcDown','adaptiveInterval','learnFromHistory','adaptiveRisk','atrStops','breakEven','trailingStop'];
 let AP = null, apTimer = null;
 
 const apEsc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -4392,7 +4438,7 @@ async function apCall(route, body){
 
 async function apOpen(){
   openModal('modal-autopilot');
-  ['ap-timeframe','ap-higherTimeframe'].forEach(id=>{ apEl(id).innerHTML = AP_TFS.map(t=>`<option value="${t}">${t}</option>`).join(''); });
+  ['ap-timeframe','ap-higherTimeframe','ap-macroTimeframe'].forEach(id=>{ apEl(id).innerHTML = AP_TFS.concat(id==='ap-macroTimeframe' ? ['off'] : []).map(t=>`<option value="${t}">${t}</option>`).join(''); });
   await apRefresh(true);
   clearInterval(apTimer);
   apTimer = setInterval(()=>{ if(apEl('modal-autopilot').classList.contains('open')) apRefresh(false); else clearInterval(apTimer); }, 10000);
@@ -4427,7 +4473,13 @@ function apRender(){
   apEl('ap-state-lbl').innerHTML = `${s.enabled ? '🟢 RUNNING' : '⚪ STOPPED'} · <span style="color:${live?'var(--red)':'var(--yellow)'}">${live?'LIVE — REAL MONEY':'PAPER'}</span> · ${apEsc(s.exchange.toUpperCase())} · ${apEsc(s.aiProvider)}/${apEsc(s.aiModel)}`;
   apEl('ap-state-sub').textContent = (AP.aiKeySet ? '' : `⚠ No ${s.aiProvider.toUpperCase()} key in Railway variables · `) +
     (AP.running ? 'Analysing now…' : AP.nextRun ? `Next analysis ${new Date(AP.nextRun).toLocaleTimeString()}` : 'Runs on Railway 24/7 — works with this page closed');
-  const h = apEl('ap-halt'); h.style.display = AP.haltReason ? 'block' : 'none'; h.textContent = AP.haltReason ? '⛔ ' + AP.haltReason : '';
+  const halt = AP.haltReason || (AP.adaptive?.pausedUntil ? `Paused after ${AP.adaptive.lossStreak} losses in a row — no new buys until ${new Date(AP.adaptive.pausedUntil).toLocaleTimeString()}` : '');
+  const h = apEl('ap-halt'); h.style.display = halt ? 'block' : 'none'; h.textContent = halt ? '⛔ ' + halt : '';
+  const rc = r => r.trend==='uptrend' ? 'var(--green)' : r.trend==='downtrend' ? 'var(--red)' : 'var(--yellow)';
+  const ad = AP.adaptive || {};
+  apEl('ap-regimes').innerHTML = Object.entries(AP.regimes||{}).map(([sym,r])=>`<span class="ap-tag" style="font-size:0.62rem;padding:3px 8px;color:${rc(r)};border:1px solid ${rc(r)};" title="ADX ${apEsc(r.adx)} · ${new Date(r.at).toLocaleTimeString()}">${apEsc(sym.replace('USDT',''))}: ${apEsc(r.label)}</span>`).join('')
+    + `<span class="ap-tag" style="font-size:0.62rem;padding:3px 8px;">loss streak ${ad.lossStreak||0} · every ${ad.intervalMinutes ?? s.intervalMinutes} min</span>`
+    + (Object.keys(AP.regimes||{}).length ? '' : '<span style="font-size:0.65rem;color:var(--muted2)">Regimes appear after the first analysis</span>');
   const money = v => `<span style="color:${v>=0?'var(--green)':'var(--red)'}">${v>=0?'+':''}${Number(v).toFixed(2)}</span>`;
   const tile = (l,v) => `<div style="background:var(--bg3);border-radius:4px;padding:8px;"><div style="font-size:0.58rem;color:var(--muted2);letter-spacing:0.12em;">${l}</div><div style="font-size:0.95rem;font-weight:700;">${v}</div></div>`;
   apEl('ap-stats').innerHTML = tile('TODAY P&L', money(st.today.pnl)) + tile('TODAY TRADES', `${st.today.trades} / ${s.maxTradesPerDay}`) +
@@ -4436,7 +4488,7 @@ function apRender(){
 
   apEl('ap-positions').innerHTML = AP.positions.length ? AP.positions.map(p=>`<div class="ap-row">
       <b>${apEsc(p.symbol)}</b> <span class="ap-tag">${apEsc(p.mode)}</span> $${Number(p.sizeUSDT).toFixed(2)} @ ${apEsc(p.entry.toPrecision(6))}
-      · SL ${apEsc(p.sl)} · TP ${apEsc(p.tp)} ${p.last ? '· now '+apEsc(p.last)+' '+money(p.qty*p.last-p.sizeUSDT) : ''}
+      · SL ${apEsc(p.sl)}${p.hardSl!=null && p.sl>p.hardSl ? ' <span class="ap-tag">'+apEsc(p.note||'raised')+'</span>' : ''} · TP ${apEsc(p.tp)} ${p.last ? '· now '+apEsc(p.last)+' '+money(p.qty*p.last-p.sizeUSDT) : ''}
       ${p.exitError ? '<span style="color:var(--red)"> ⚠ exit order failed</span>' : ''}
       <button class="btn btn-sm btn-outline" style="float:right" onclick="apClose('${apEsc(p.id)}')">Close</button></div>`).join('')
     : '<div class="ap-row" style="color:var(--muted2)">No open positions</div>';
@@ -4446,7 +4498,9 @@ function apRender(){
       <span style="color:var(--muted2)">${new Date(d.at).toLocaleString()}</span> <b>${apEsc(d.symbol)}</b>
       <b style="color:${actColor(d.action)}">${apEsc(d.action)}</b>${d.confidence!=null ? ' '+apEsc(d.confidence)+'%' : ''}
       ${d.price ? '@ '+apEsc(d.price) : ''} → <i>${apEsc(d.outcome)}</i>
-      ${d.reason ? `<div style="color:var(--muted2);font-size:0.65rem;">${apEsc(d.reason)}</div>` : ''}</div>`).join('')
+      ${d.setup && d.setup!=='none' ? '<span class="ap-tag">'+apEsc(d.setup)+'</span>' : ''} ${d.regime ? '<span class="ap-tag">'+apEsc(d.regime)+'</span>' : ''}
+      ${d.reason ? `<div style="color:var(--muted2);font-size:0.65rem;">${apEsc(d.reason)}</div>` : ''}
+      ${d.adapt ? `<div style="color:var(--yellow);font-size:0.62rem;">adapted: ${apEsc(d.adapt)}</div>` : ''}</div>`).join('')
     : '<div class="ap-row" style="color:var(--muted2)">No decisions yet — press 🔍 Analyse now</div>';
 
   apEl('ap-closed').innerHTML = AP.closed.length ? AP.closed.map(c=>`<div class="ap-row">
