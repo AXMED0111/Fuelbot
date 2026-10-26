@@ -1435,6 +1435,21 @@ setTimeout(() => {
         <div class="form-row"><label>Max stop distance (%)</label><input type="number" id="ap-maxStopLossPct" min="0.1" step="0.1"/></div>
       </div>
 
+      <div class="ap-sec">Extras</div>
+      <div class="ap-grid">
+        <label class="ap-chk"><input type="checkbox" id="ap-useSentiment"/> Give the AI Fear &amp; Greed + funding rate</label>
+        <label class="ap-chk"><input type="checkbox" id="ap-shadowBaseline"/> Compare with simple rules (practice)</label>
+        <label class="ap-chk"><input type="checkbox" id="ap-notifyTrades"/> Telegram: every buy / sell</label>
+        <label class="ap-chk"><input type="checkbox" id="ap-notifyErrors"/> Telegram: problems</label>
+        <div class="form-row"><label>Daily summary hour (UTC, −1 = off)</label><input type="number" id="ap-dailySummaryHourUTC" min="-1" max="23" step="1"/></div>
+        <div class="form-row"><label>Second opinion AI (must also say BUY)</label><select id="ap-secondOpinion"><option value="off">Off</option><option value="deepseek">DeepSeek</option><option value="anthropic">Anthropic (Claude)</option><option value="openai">OpenAI</option></select></div>
+        <div class="form-row"><label>Second opinion model (blank = default)</label><input type="text" id="ap-secondModel"/></div>
+        <label class="ap-chk"><input type="checkbox" id="ap-secondOnlyLive"/> Second opinion only for real-money buys</label>
+        <div class="form-row"><label>AI price $/1M input tokens</label><input type="number" id="ap-aiCostPer1MInput" min="0" step="0.01"/></div>
+        <div class="form-row"><label>AI price $/1M output tokens</label><input type="number" id="ap-aiCostPer1MOutput" min="0" step="0.01"/></div>
+        <div class="form-row"><label>MEXC key created on</label><input type="date" id="ap-mexcKeyCreated"/></div>
+      </div>
+
       <div class="ap-sec">Paper trading</div>
       <div class="ap-grid">
         <div class="form-row"><label>Paper balance (USDT)</label><input type="number" id="ap-paperBalanceUSDT" min="10" step="10"/></div>
@@ -4537,10 +4552,10 @@ function drawChart(){
 // ═══════════════════════════════════════════════════════════════
 const AP_TFS = ['1m','5m','15m','30m','1h','4h','1d'];
 const AP_MODELS = { deepseek:['deepseek-chat','deepseek-reasoner'], anthropic:['claude-sonnet-5-5','claude-opus-5-5','claude-haiku-5-5'], openai:['gpt-4o-mini','gpt-4o'] };
-const AP_NUM  = ['adxTrendLevel','downtrendConfidenceBoost','highVolSizeMult','memoryTrades','streakConfidenceStep','streakSizeCutPct','lossStreakPause','pauseMinutes','minStopAtr','maxStopAtr','riskPerTradeUSDT','minTradeSizeUSDT','breakEvenAtR','trailStartAtR','trailAtrMult','maxHoldHours','intervalMinutes','candleCount','aiTemperature','aiMaxTokens','minConfidence','stopLossPct','takeProfitPct','tradeSizeUSDT','maxOpenPositions','maxTradesPerDay','dailyLossLimitUSDT','minRiskReward','cooldownMinutes','minStopLossPct','maxStopLossPct','paperBalanceUSDT','feePct'];
-const AP_SEL  = ['mode','exchange','timeframe','higherTimeframe','macroTimeframe','aiProvider','sizingMode'];
-const AP_TXT  = ['aiModel','customInstructions'];
-const AP_BOOL = ['allowBuy','allowAiSell','allowAiTighten','useAiLevels','adaptiveRegime','blockBuysInDowntrend','btcFilter','blockAltsWhenBtcDown','adaptiveInterval','learnFromHistory','adaptiveRisk','atrStops','breakEven','trailingStop'];
+const AP_NUM  = ['dailySummaryHourUTC','aiCostPer1MInput','aiCostPer1MOutput','adxTrendLevel','downtrendConfidenceBoost','highVolSizeMult','memoryTrades','streakConfidenceStep','streakSizeCutPct','lossStreakPause','pauseMinutes','minStopAtr','maxStopAtr','riskPerTradeUSDT','minTradeSizeUSDT','breakEvenAtR','trailStartAtR','trailAtrMult','maxHoldHours','intervalMinutes','candleCount','aiTemperature','aiMaxTokens','minConfidence','stopLossPct','takeProfitPct','tradeSizeUSDT','maxOpenPositions','maxTradesPerDay','dailyLossLimitUSDT','minRiskReward','cooldownMinutes','minStopLossPct','maxStopLossPct','paperBalanceUSDT','feePct'];
+const AP_SEL  = ['mode','exchange','timeframe','higherTimeframe','macroTimeframe','aiProvider','sizingMode','secondOpinion'];
+const AP_TXT  = ['aiModel','customInstructions','secondModel','mexcKeyCreated'];
+const AP_BOOL = ['useSentiment','shadowBaseline','notifyTrades','notifyErrors','secondOnlyLive','allowBuy','allowAiSell','allowAiTighten','useAiLevels','adaptiveRegime','blockBuysInDowntrend','btcFilter','blockAltsWhenBtcDown','adaptiveInterval','learnFromHistory','adaptiveRisk','atrStops','breakEven','trailingStop'];
 let AP = null, apTimer = null;
 
 const apEsc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -6586,6 +6601,7 @@ function toggleStargatePanel() {
   #home .h-steps{grid-template-columns:repeat(2,1fr)}
 }
 @media (max-width:480px){
+  #home #hm-perf-stats{grid-template-columns:repeat(2,1fr) !important}
   #home .h-wrap{padding:14px 14px 50px}
   #home .h-status .big{font-size:22px}
   #home .h-kpi .val{font-size:20px}
@@ -6597,6 +6613,7 @@ function toggleStargatePanel() {
     <div class="h-top">
       <div class="h-logo"><i>⛽</i>FuelBot</div>
       <span class="h-pill" id="hm-conn"><span class="h-dot"></span>Connecting…</span>
+      <span class="h-pill" id="hm-alerts" style="display:none;cursor:pointer" onclick="homeOpenSettings('alerts')" title="Phone alerts"></span>
       <span class="h-spacer"></span>
       <span id="hm-topbtns" style="display:none;gap:8px;flex-wrap:wrap">
         <button class="h-btn ghost" onclick="toggleTheme()" title="Switch light / dark">🌓</button>
@@ -6634,6 +6651,7 @@ function toggleStargatePanel() {
             <button class="h-btn" onclick="homeRunNow()" title="Ask the AI to check every coin right now">🔍 Check now</button>
           </div>
           <div class="h-sub" id="hm-last" style="margin-top:18px;padding-top:14px;border-top:1px solid var(--h-line)"></div>
+          <div id="hm-keywarn" class="h-sub" style="display:none;margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(255,181,71,.14);color:var(--h-amber);font-weight:600"></div>
           <div id="hm-halt" class="h-sub" style="display:none;margin-top:14px;padding:10px 12px;border-radius:12px;background:rgba(255,90,110,.12);color:var(--h-red);font-weight:600"></div>
         </div>
         <div class="h-card">
@@ -6667,7 +6685,27 @@ function toggleStargatePanel() {
 
       <div class="h-cols">
         <div class="h-card">
-          <div class="h-head"><div><h3>Market mood</h3><p class="h-sub">What each coin is doing — and whether the bot is allowed to buy it</p></div></div>
+          <div class="h-head"><div><h3>Performance</h3><p class="h-sub" id="hm-perf-sub">Profit over time, from every closed trade</p></div>
+            <div class="h-seg"><button id="hm-pm-paper" onclick="homePerfMode('paper')">Practice</button><button id="hm-pm-live" onclick="homePerfMode('live')">Real</button></div></div>
+          <div id="hm-curve"></div>
+          <div id="hm-perf-stats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px"></div>
+          <div id="hm-percoin" style="margin-top:12px"></div>
+        </div>
+        <div class="h-card">
+          <div class="h-head"><div><h3>Is the AI worth it?</h3><p class="h-sub">The AI's trades vs a simple rule-based strategy, practice-traded at the same time</p></div></div>
+          <div id="hm-vs"></div>
+          <div class="h-sub" id="hm-aicost" style="margin-top:14px"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+            <button class="h-btn" onclick="homeDownload('trades')">⬇ Trades (CSV)</button>
+            <button class="h-btn" onclick="homeDownload('decisions')">⬇ AI decisions (CSV)</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="h-cols">
+        <div class="h-card">
+          <div class="h-head"><div><h3>Market mood</h3><p class="h-sub">What each coin is doing — and whether the bot is allowed to buy it</p></div>
+            <span class="h-badge b-dim" id="hm-fng" style="text-transform:none" title="Crypto Fear & Greed index (0 = extreme fear, 100 = extreme greed)"></span></div>
           <div class="h-coins" id="hm-coins"></div>
         </div>
         <div class="h-card">
@@ -6714,6 +6752,17 @@ function toggleStargatePanel() {
         <p class="h-sub">The bot switches itself off when today's losses reach this.</p></div>
       <div class="h-field"><label for="h-every">Check the market every</label>
         <select id="hm-every"><option value="5">5 minutes</option><option value="15">15 minutes (recommended)</option><option value="30">30 minutes</option><option value="60">1 hour</option></select></div>
+      <div class="h-field"><label for="hm-keydate">MEXC API key created on</label>
+        <input id="hm-keydate" type="date"/>
+        <p class="h-sub">MEXC keys without an IP lock expire after about 90 days — you'll get a reminder.</p></div>
+      <div class="h-field" id="hm-alerts-help"><label>📱 Phone alerts (Telegram)</label>
+        <div id="hm-alerts-state" class="h-sub" style="margin-bottom:8px"></div>
+        <ol class="h-sub" style="padding-left:18px;margin:0;line-height:1.6">
+          <li>In Telegram, open <b>@BotFather</b> → <b>/newbot</b> → copy the token.</li>
+          <li>Railway → fuelbot-api → Variables → add <b>TELEGRAM_BOT_TOKEN</b> = the token.</li>
+          <li>Send any message to your new bot — it replies with your chat ID.</li>
+          <li>Add <b>TELEGRAM_CHAT_ID</b> = that number. Done: send <b>/status</b> to test.</li>
+        </ol></div>
       <div style="display:flex;gap:10px;margin-top:8px">
         <button class="h-btn primary" style="flex:1" onclick="homeSaveSettings()">Save</button>
         <button class="h-btn" onclick="homeCloseSettings();apOpen()">All settings…</button>
@@ -6778,6 +6827,7 @@ async function homeRefresh(){
     AP = await apCall('/autopilot/status');
     H$('hm-connect').style.display='none'; H$('hm-main').style.display='';
     homeRender();
+    try { homePerf = await apCall('/autopilot/performance', { mode: homePerfModeSel || AP.settings.mode }); homeRenderPerf(); } catch(e){ /* older server */ }
   } catch(e){
     if(/Unauthorized|401|Bot Secret/.test(e.message)) homeShowConnect('Wrong key — try again.');
     else if(/Too many/.test(e.message)) homeShowConnect('Too many wrong tries — wait 10 minutes.');
@@ -6902,13 +6952,80 @@ function homeRender(){
       ${d.reason ? `<div class="t3">“${hEsc(d.reason)}”</div>` : ''}</div></div>`;
   }).join('') : '<div class="h-empty">The AI checks every few minutes. Its first thoughts will appear here — press 🔍 Check now to see them right away.</div>';
 
+  // sentiment, alerts, key expiry
+  const fg = AP.sentiment?.fearGreed;
+  H$('hm-fng').style.display = fg ? '' : 'none';
+  if(fg) H$('hm-fng').textContent = `${fg.value<25?'😱':fg.value<45?'😟':fg.value<55?'😐':fg.value<75?'🙂':'🤑'} Fear & Greed ${fg.value} · ${fg.label}`;
+  const tg = AP.telegram;
+  H$('hm-alerts').style.display = tg ? '' : 'none';
+  if(tg) H$('hm-alerts').innerHTML = tg.linked ? `<span class="h-dot on"></span>📱 Alerts on` : `<span class="h-dot off"></span>📱 Alerts off`;
+  const k = AP.keyExpiry;
+  H$('hm-keywarn').style.display = k && k.daysLeft <= 14 ? '' : 'none';
+  if(k && k.daysLeft <= 14) H$('hm-keywarn').textContent = k.daysLeft > 0 ? `🔑 Your MEXC API key expires in about ${k.daysLeft} day${k.daysLeft===1?'':'s'} — make a new one soon.` : '🔑 Your MEXC API key has probably expired — make a new one and update Railway.';
+
   // history
-  const why = { TP:'🎯 Hit target', SL:'🛑 Stop-loss', TRAIL:'🔒 Profit-lock stop', AI:'🤖 AI sold', MANUAL:'✋ You closed', KILL:'⛔ Emergency stop', TIME:'⌛ Too slow, closed' };
+  const why = { TP:'🎯 Hit target', SL:'🛑 Stop-loss', TRAIL:'🔒 Profit-lock stop', AI:'🤖 AI sold', MANUAL:'✋ You closed', KILL:'⛔ Emergency stop', TIME:'⌛ Too slow, closed', EXCHANGE:'🏦 Closed on exchange' };
   H$('hm-hist').innerHTML = AP.closed.length ? `<table class="h-hist">${AP.closed.slice(0,15).map(c=>`<tr>
       <td><b>${hEsc(hCoin(c.symbol))}</b><div class="h-sub">${hAgo(c.closedAt)}</div></td>
       <td>${hEsc(why[c.why]||c.why)}<div class="h-sub">${hPrice(c.entry)} → ${hPrice(c.exit)}</div></td>
-      <td style="text-align:right" class="${hCls(c.pnl)}"><b>${hMoney(c.pnl)}</b><div class="h-sub">${c.mode==='live'?'real':'practice'}</div></td></tr>`).join('')}</table>`
+      <td style="text-align:right" class="${hCls(c.pnl)}"><b>${hMoney(c.pnl)}</b><div class="h-sub">${c.mode==='live' ? (c.verified ? 'real · ✓ MEXC' : 'real · est.') : 'practice'}</div></td></tr>`).join('')}</table>`
     : '<div class="h-empty">No closed trades yet.</div>';
+}
+
+// ── performance ──
+let homePerf = null, homePerfModeSel = null;
+function homePerfMode(m){ homePerfModeSel = m; homeRefresh(); }
+function homeCurve(points){
+  if(!points || points.length < 2) return '<div class="h-empty">The chart appears after the first closed trade.</div>';
+  const W = 600, Hh = 150, pad = 6, xs = points.map(p=>p.t), ys = points.map(p=>p.v);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs) || x0+1, y0 = Math.min(0, ...ys), y1 = Math.max(0, ...ys) || 1;
+  const X = t => pad + (t-x0)/((x1-x0)||1)*(W-2*pad), Y = v => Hh-pad - (v-y0)/((y1-y0)||1)*(Hh-2*pad);
+  const line = points.map(p=>`${X(p.t).toFixed(1)},${Y(p.v).toFixed(1)}`).join(' ');
+  const up = ys[ys.length-1] >= 0, col = up ? 'var(--h-green)' : 'var(--h-red)';
+  return `<svg viewBox="0 0 ${W} ${Hh}" style="width:100%;height:150px;display:block" preserveAspectRatio="none" role="img" aria-label="Profit over time">
+    <line x1="0" x2="${W}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--h-line)" stroke-dasharray="4 4"/>
+    <polygon points="${X(x0)},${Y(0)} ${line} ${X(xs[xs.length-1])},${Y(0)}" fill="${col}" opacity=".12"/>
+    <polyline points="${line}" fill="none" stroke="${col}" stroke-width="2.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>
+    <div class="h-range-lbl"><span>${new Date(x0).toLocaleDateString()}</span><span class="${hCls(ys[ys.length-1])}" style="font-weight:700">${hMoney(ys[ys.length-1])}</span></div>`;
+}
+function homeRenderPerf(){
+  const p = homePerf; if(!p) return;
+  const m = homePerfModeSel || p.mode;
+  H$('hm-pm-paper').className = m==='paper' ? 'on' : ''; H$('hm-pm-live').className = m==='live' ? 'on live' : '';
+  H$('hm-perf-sub').textContent = m==='live' ? `Real-money trades${p.verified ? ` · ${p.verified} verified with MEXC` : ''}` : 'Practice trades — no real money';
+  H$('hm-curve').innerHTML = homeCurve(p.equity.points);
+  const box = (l, v, c='') => `<div style="background:var(--h-card2);border-radius:12px;padding:10px"><div class="h-sub" style="font-size:12px">${l}</div><div style="font-weight:800;font-size:16px;white-space:nowrap" class="${c}">${v}</div></div>`;
+  const a = p.ai;
+  H$('hm-perf-stats').innerHTML = box('Biggest drop', p.equity.maxDrawdown ? '−$'+p.equity.maxDrawdown.toFixed(2) : '$0', p.equity.maxDrawdown?'neg':'')
+    + box('Avg win', a.wins ? hMoney(a.avgWin) : '—', 'pos') + box('Avg loss', a.trades-a.wins ? hMoney(a.avgLoss) : '—', 'neg')
+    + box('Fees paid', '$'+a.fees.toFixed(2));
+  const coins = Object.entries(p.perCoin||{});
+  H$('hm-percoin').innerHTML = coins.length ? `<table class="h-hist">${coins.map(([sym,c])=>`<tr><td><b>${hEsc(hCoin(sym))}</b></td><td>${c.trades} trade${c.trades===1?'':'s'} · ${c.winRate}% won</td><td style="text-align:right" class="${hCls(c.pnl)}"><b>${hMoney(c.pnl)}</b></td></tr>`).join('')}</table>` : '';
+  const r = p.rules, bar = (label, x, col) => {
+    const max = Math.max(Math.abs(a.pnl), Math.abs(r.pnl), 0.01), w = Math.round(Math.abs(x.pnl)/max*100);
+    return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700"><span>${label}</span><span class="${hCls(x.pnl)}">${hMoney(x.pnl)}</span></div>
+      <div style="height:10px;border-radius:6px;background:var(--h-card2);margin:6px 0;overflow:hidden"><i style="display:block;height:100%;width:${w}%;background:${x.pnl>=0?'var(--h-green)':'var(--h-red)'}"></i></div>
+      <div class="h-sub" style="font-size:12.5px">${x.trades} trades · ${x.winRate}% won${x.profitFactor ? ` · profit factor ${x.profitFactor}` : ''}</div></div>`;
+  };
+  let verdict = 'Not enough trades yet to compare — give it a few days.';
+  if(a.trades >= 5 && r.trades >= 5) verdict = a.pnl > r.pnl ? '✅ So far the AI is doing better than the simple rules.' : '⚠ So far the simple rules are doing as well or better — the AI is not adding value yet.';
+  H$('hm-vs').innerHTML = bar('🤖 AI bot', a) + bar('📏 Simple rules', r) + `<div style="font-weight:600;font-size:14px">${verdict}</div>`;
+  const u = AP.aiUsage;
+  H$('hm-aicost').textContent = u ? `AI cost (estimate): ~$${u.todayCost.toFixed(3)} today · ~$${u.totalCost.toFixed(2)} in total · ${u.todayCalls} AI checks today` : '';
+}
+async function homeDownload(kind){
+  try {
+    const r = await apCall('/autopilot/history', { kind });
+    const cols = kind==='decisions' ? ['at','symbol','action','confidence','setup','price','regime','outcome','reason','mode']
+               : ['openedAt','closedAt','symbol','mode','entry','exit','sizeUSDT','pnl','fees','why','setup','regime','confidence','verified','reason'];
+    const cell = v => { const t = v==null ? '' : String(v); return /[",\n]/.test(t) ? `"${t.replace(/"/g,'""')}"` : t; };
+    const csv = [cols.join(','), ...r.rows.map(row => cols.map(c => cell(row[c])).join(','))].join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type:'text/csv' }));
+    a.download = `fuelbot-${kind}-${new Date().toISOString().slice(0,10)}.csv`; a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
+    homeToast(`Downloaded ${r.rows.length} ${kind}`);
+  } catch(e){ homeToast('⚠ '+e.message); }
 }
 
 // ── actions ──
@@ -6940,9 +7057,14 @@ let homePreset = null;
 function homeDetectPreset(s){ return Object.keys(HOME_PRESETS).find(k => Object.entries(HOME_PRESETS[k]).every(([f,v]) => s[f]===v)) || 'custom'; }
 function homePickPreset(p){ homePreset=p; document.querySelectorAll('#hm-presets .h-preset').forEach(b=>b.classList.toggle('on', b.dataset.p===p)); H$('hm-preset-note').textContent = HOME_PRESET_NOTE[p]; }
 document.querySelectorAll('#hm-presets .h-preset').forEach(b => b.addEventListener('click', ()=>homePickPreset(b.dataset.p)));
-function homeOpenSettings(){
+function homeOpenSettings(focus){
   if(!AP){ homeToast('Connect to your bot first'); return; }
   const s = AP.settings;
+  H$('hm-keydate').value = s.mexcKeyCreated || '';
+  const tg = AP.telegram;
+  H$('hm-alerts-state').innerHTML = !tg ? '' : tg.linked ? '<b style="color:var(--h-green)">✔ Connected.</b> You get a message on every trade, problems, and a daily summary.'
+    : tg.enabled ? '<b style="color:var(--h-amber)">Almost:</b> the bot token is set — now add TELEGRAM_CHAT_ID (step 3–4).' : '<b>Not set up yet</b> — 2 minutes:';
+  if(focus==='alerts') setTimeout(()=>H$('hm-alerts-help').scrollIntoView({ behavior:'smooth' }), 50);
   homePickPreset(homeDetectPreset(s));
   H$('hm-coins-in').value = (s.symbols||[]).map(hCoin).join(', ');
   H$('hm-size').value = s.tradeSizeUSDT; H$('hm-loss').value = s.dailyLossLimitUSDT;
@@ -6951,7 +7073,7 @@ function homeOpenSettings(){
 }
 function homeCloseSettings(){ H$('hm-sheet').classList.remove('open'); }
 function homeSaveSettings(){
-  const out = { symbols:H$('hm-coins-in').value, tradeSizeUSDT:H$('hm-size').value, dailyLossLimitUSDT:H$('hm-loss').value, intervalMinutes:H$('hm-every').value };
+  const out = { symbols:H$('hm-coins-in').value, tradeSizeUSDT:H$('hm-size').value, dailyLossLimitUSDT:H$('hm-loss').value, intervalMinutes:H$('hm-every').value, mexcKeyCreated:H$('hm-keydate').value };
   if(homePreset && HOME_PRESETS[homePreset]) Object.assign(out, HOME_PRESETS[homePreset]);
   homeAct(async()=>{ await apSend(out); homeCloseSettings(); }, 'Settings saved on your bot');
 }
