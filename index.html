@@ -803,6 +803,84 @@ header{position:relative;z-index:10;display:flex;justify-content:space-between;a
 @media(max-width:1100px){#app-grid{grid-template-columns:1fr 1fr !important;}}
 @media(max-width:768px){#app-grid{grid-template-columns:1fr !important;}}
 </style>
+<style id="pro-refresh">
+/* ══ PRO VIEW REFRESH ══════════════════════════════════════════
+   Same layout, clearer look: the Home palette, readable labels,
+   rounded cards, no scanline/grid overlay. Layered on top of the
+   original styles so every feature keeps working. */
+:root{
+  --bg:#0b1020; --bg2:#141c31; --bg3:#1b2540;
+  --border:#232e4a; --border2:#2e3b5e;
+  --accent:#5b8cff; --accent2:#3d6be0;
+  --green:#2fd27e; --green2:#1f9e5c;
+  --red:#ff5a6e; --red2:#b8394b;
+  --yellow:#ffb547; --orange:#ff8a3d; --purple:#a78bfa;
+  --muted:#3a4666; --muted2:#9aa6c2; --text:#e8ecf6;
+  --font:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+[data-theme="light"]{
+  --bg:#f4f6fb; --bg2:#ffffff; --bg3:#eef2f9;
+  --border:#e1e7f1; --border2:#cfd8e8;
+  --accent:#3d6be0; --accent2:#2f57c2;
+  --green:#14a35c; --green2:#0f7f47;
+  --red:#e0384f; --red2:#a8283a;
+  --yellow:#c98000; --orange:#d96a1a; --purple:#7c5ae0;
+  --muted:#b6c0d4; --muted2:#5a6680; --text:#141a2b;
+}
+body{
+  font-family:var(--font) !important; -webkit-font-smoothing:antialiased;
+  background:radial-gradient(1200px 600px at 10% -10%, rgba(91,140,255,.12), transparent 60%), var(--bg) !important;
+  background-attachment:fixed !important;
+}
+[data-theme="light"] body{background:var(--bg) !important}
+body::before, body::after{display:none !important}
+
+/* header */
+header{background:var(--bg2) !important;border-bottom:1px solid var(--border) !important;padding:10px 20px !important;gap:12px}
+.logo{background:linear-gradient(90deg,var(--accent),var(--purple)) !important;-webkit-background-clip:text !important;filter:none !important;letter-spacing:.06em !important}
+.hdr-stat{font-size:.68rem !important}
+.hdr-stat .val{color:var(--text) !important;font-size:.95rem !important}
+.hdr-stat .lbl{color:var(--muted2) !important;letter-spacing:.04em !important;text-transform:uppercase;font-size:.6rem}
+.btn-icon{border-radius:10px !important;padding:7px 11px !important;background:var(--bg3) !important}
+.live-pill{border-radius:999px !important;background:rgba(47,210,126,.12) !important;border-color:transparent !important}
+
+/* exchange bar, nav, coin bar */
+.exchange-bar,#main-nav,.coin-bar{background:var(--bg2) !important;border-color:var(--border) !important}
+.ex-chip{border-radius:10px !important;background:var(--bg3) !important;border-color:var(--border) !important;padding:6px 12px !important}
+.ex-chip-dot{box-shadow:none !important}
+#main-nav{border-bottom:1px solid var(--border) !important}
+.main-tab{font-family:var(--font) !important;font-size:.8rem !important;font-weight:600;letter-spacing:.02em !important;padding:12px 18px !important;color:var(--muted2) !important}
+.main-tab.active{color:var(--text) !important;border-bottom-color:var(--accent) !important}
+
+/* layout + cards */
+.app{gap:14px !important;padding:16px 20px !important}
+.panel{border-radius:14px !important;padding:16px !important;border:1px solid var(--border) !important;
+  box-shadow:0 6px 20px rgba(0,0,0,.18)}
+[data-theme="light"] .panel{box-shadow:0 4px 14px rgba(20,30,60,.06)}
+.panel-hdr{font-family:var(--font) !important;font-size:.74rem !important;letter-spacing:.06em !important;color:var(--text) !important;
+  font-weight:700 !important;margin-bottom:12px !important;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.panel-hdr::before{width:3px !important;height:14px !important;border-radius:3px !important}
+
+/* buttons + forms */
+.btn{border-radius:10px !important;font-family:var(--font) !important;font-weight:600;letter-spacing:.02em !important}
+.btn-buy,.btn-sell{border-radius:10px !important;font-family:var(--font) !important;font-size:.82rem !important;padding:11px !important}
+.btn-buy{background:rgba(47,210,126,.14) !important}
+.btn-sell{background:rgba(255,90,110,.12) !important}
+.form-row input,.form-row select{border-radius:10px !important;font-family:var(--font) !important}
+.form-row label{letter-spacing:.06em !important;color:var(--muted2) !important}
+.modal{border-radius:18px !important;box-shadow:0 20px 60px rgba(0,0,0,.45) !important}
+.modal-hdr{font-family:var(--font) !important;letter-spacing:.01em !important}
+.info-box{border-radius:12px !important}
+.toggle input:checked+.toggle-slider{background:var(--green) !important}
+
+/* activity log */
+.log-row{padding:6px 0 !important;border-bottom:1px solid var(--border)}
+.log-t{color:var(--muted2) !important}
+
+/* softer glows: clear colours, no neon blur */
+*{text-shadow:none !important}
+</style>
 </head>
 <body>
 
@@ -6520,20 +6598,21 @@ function toggleStargatePanel() {
       <div class="h-logo"><i>⛽</i>FuelBot</div>
       <span class="h-pill" id="hm-conn"><span class="h-dot"></span>Connecting…</span>
       <span class="h-spacer"></span>
-      <button class="h-btn ghost" onclick="toggleTheme()" title="Switch light / dark">🌓</button>
-      <button class="h-btn" onclick="homeOpenSettings()">⚙ Settings</button>
-      <button class="h-btn" onclick="homeShowPro()" title="Charts, signals and exchange tools">Pro view →</button>
+      <span id="hm-topbtns" style="display:none;gap:8px;flex-wrap:wrap">
+        <button class="h-btn ghost" onclick="toggleTheme()" title="Switch light / dark">🌓</button>
+        <button class="h-btn" onclick="homeOpenSettings()">⚙ Settings</button>
+        <button class="h-btn" onclick="homeShowPro()" title="Charts, signals and exchange tools">Pro view →</button>
+        <button class="h-btn ghost" onclick="homeLogout()" title="Forget the key on this browser">Log out</button>
+      </span>
     </div>
 
     <!-- Not connected yet -->
     <div id="hm-connect" class="h-card h-connect" style="display:none">
-      <div style="font-size:42px">🔌</div>
-      <h3 style="font-size:22px;margin:8px 0">Connect to your bot</h3>
-      <p class="h-sub" style="margin-bottom:18px">Your bot runs on Railway 24/7. Paste its <b>Bot Secret</b> once so this page can show what it's doing.<br>
-        Find it in <b>Railway → fuelbot-api → Variables → BOT_SECRET</b> (click the 👁 eye, then copy).</p>
-      <input id="hm-secret" type="password" placeholder="Paste the Bot Secret" autocomplete="off"/>
+      <div style="font-size:38px">🔐</div>
+      <h3 style="font-size:20px;margin:8px 0 16px">Bot security key</h3>
+      <input id="hm-secret" type="password" placeholder="Paste your key" autocomplete="off" onkeydown="if(event.key==='Enter')homeConnect()"/>
       <div id="hm-connect-err" class="h-sub" style="color:var(--h-red);min-height:20px;margin-top:8px"></div>
-      <button class="h-btn primary" style="width:100%;padding:12px" onclick="homeConnect()">Connect</button>
+      <button class="h-btn primary" style="width:100%;padding:12px" onclick="homeConnect()">Log in</button>
     </div>
 
     <!-- Main -->
@@ -6578,6 +6657,12 @@ function toggleStargatePanel() {
         <div class="h-card h-kpi"><div class="lbl">Win rate <span class="h-q" title="Share of closed trades that made money">?</span></div><div class="val" id="hm-k-win">—</div><div class="hint" id="hm-k-win-h">—</div></div>
         <div class="h-card h-kpi"><div class="lbl">Open trades</div><div class="val" id="hm-k-open">—</div><div class="hint" id="hm-k-open-h">—</div></div>
         <div class="h-card h-kpi"><div class="lbl" id="hm-k-bal-l">Practice balance</div><div class="val" id="hm-k-bal">—</div><div class="hint" id="hm-k-bal-h">simulated USDT</div></div>
+      </div>
+
+      <div class="h-card" style="margin-bottom:16px">
+        <div class="h-head" style="margin-bottom:10px"><div><h3>Your safety rules</h3><p class="h-sub">The AI can only trade inside these limits — change them in ⚙ Settings</p></div>
+          <span class="h-badge b-dim" id="hm-style"></span></div>
+        <div id="hm-rules" style="display:flex;flex-wrap:wrap;gap:8px"></div>
       </div>
 
       <div class="h-cols">
@@ -6694,25 +6779,36 @@ async function homeRefresh(){
     H$('hm-connect').style.display='none'; H$('hm-main').style.display='';
     homeRender();
   } catch(e){
-    if(/Unauthorized|401|Bot Secret/.test(e.message)) homeShowConnect('That secret was not accepted — copy it again from Railway.');
+    if(/Unauthorized|401|Bot Secret/.test(e.message)) homeShowConnect('Wrong key — try again.');
+    else if(/Too many/.test(e.message)) homeShowConnect('Too many wrong tries — wait 10 minutes.');
     else { homeConn(false, 'Bot unreachable'); if(!AP) homeShowConnect('Could not reach the bot: '+e.message); }
   }
 }
 
-function homeConn(ok, txt){ H$('hm-conn').innerHTML = `<span class="h-dot ${ok?'on':'off'}"></span>${hEsc(txt)}`; }
+function homeConn(ok, txt){
+  H$('hm-conn').innerHTML = `<span class="h-dot ${ok?'on':'off'}"></span>${hEsc(txt)}`;
+  H$('hm-topbtns').style.display = ok ? 'inline-flex' : 'none';
+}
+function homeLogout(){
+  if(!confirm('Log out on this browser? The bot keeps running on the server.')) return;
+  SETTINGS.botSecret=''; try{ localStorage.removeItem('fb_bot_secret'); }catch(e){}
+  const f=document.getElementById('set-bot-secret'); if(f) f.value='';
+  if(typeof checkProxy==='function') checkProxy();
+  AP=null; H$('hm-secret').value=''; homeShowConnect();
+}
 function homeShowConnect(err){
   homeConn(false,'Not connected'); H$('hm-main').style.display='none'; H$('hm-connect').style.display='';
   H$('hm-connect-err').textContent = err || '';
 }
 async function homeConnect(){
   const v = H$('hm-secret').value.trim();
-  if(!v){ H$('hm-connect-err').textContent='Paste the Bot Secret first'; return; }
+  if(!v){ H$('hm-connect-err').textContent='Paste your key first'; return; }
   SETTINGS.botSecret = v;
   if(!SETTINGS.proxyUrl) SETTINGS.proxyUrl = 'https://fuelbot-api-production.up.railway.app';
   try { localStorage.setItem('fb_bot_secret', v); } catch(e){}
   const field = document.getElementById('set-bot-secret'); if(field) field.value = v;
   if(typeof checkProxy==='function') checkProxy();
-  H$('hm-connect-err').textContent='Connecting…';
+  H$('hm-connect-err').textContent='Checking…';
   await homeRefresh();
 }
 
@@ -6748,6 +6844,21 @@ function homeRender(){
   if(live){ H$('hm-k-bal-l').textContent='Per trade'; set('hm-k-bal', '$'+s.tradeSizeUSDT); H$('hm-k-bal-h').textContent=`stops after −$${s.dailyLossLimitUSDT} a day`; }
   else    { H$('hm-k-bal-l').textContent='Practice balance'; set('hm-k-bal', '$'+st.paperCash.toLocaleString(undefined,{maximumFractionDigits:2})); H$('hm-k-bal-h').textContent=`started with $${s.paperBalanceUSDT}`; }
 
+  // safety rules
+  const style = homeDetectPreset(s);
+  H$('hm-style').textContent = {careful:'🛡 Careful',balanced:'⚖ Balanced',aggressive:'🚀 Bold',custom:'Custom'}[style];
+  const rule = (t, ok=true) => `<span class="h-badge ${ok?'b-dim':'b-down'}" style="text-transform:none;font-size:13px;font-weight:600;padding:7px 12px">${t}</span>`;
+  H$('hm-rules').innerHTML = [
+    rule(`💵 $${s.tradeSizeUSDT} per trade`),
+    rule(`📦 Max ${s.maxOpenPositions} open trades`),
+    rule(`🧯 Stops for the day at −$${s.dailyLossLimitUSDT}`),
+    rule(`🎯 AI must be ${s.minConfidence}%+ sure`),
+    rule(`⚖ Profit ≥ ${s.minRiskReward}× the risk`),
+    rule(s.blockBuysInDowntrend ? '📉 No buys in falling markets' : '📉 Buys in falling markets allowed', s.blockBuysInDowntrend),
+    rule(`🔒 ${s.breakEven||s.trailingStop ? 'Locks in profit as price rises' : 'Profit lock off'}`, s.breakEven||s.trailingStop),
+    rule(`⏸ Pauses after ${s.lossStreakPause||'∞'} losses in a row`),
+  ].join('');
+
   // market mood
   const btc = (AP.regimes||{}).BTCUSDT;
   H$('hm-coins').innerHTML = (s.symbols||[]).map(sym=>{
@@ -6758,8 +6869,13 @@ function homeRender(){
     else if(r.trend==='downtrend' && s.blockBuysInDowntrend) can = '🚫 Won’t buy while falling';
     else if(sym!=='BTCUSDT' && btc?.trend==='downtrend' && s.blockAltsWhenBtcDown && s.btcFilter) can = '🚫 Waiting — Bitcoin is falling';
     else if(r.volatility==='high') can = '⚠ Can buy, smaller size';
+    const last = (AP.decisions||[]).find(d => d.symbol===sym && d.action!=='ERROR');
+    const ai = last ? `AI: ${last.action==='BUY'?'Buy':last.action==='SELL'?'Sell':'Wait'} · ${hEsc(last.confidence)}% sure` : 'AI: no view yet';
+    const ch = r && r.change24h!=null ? `<span class="${hCls(r.change24h)}" style="font-weight:700">${r.change24h>=0?'+':''}${Number(r.change24h).toFixed(2)}%</span> <span style="color:var(--h-faint)">24h</span>` : '';
     return `<div class="h-coin"><div class="nm">${hEsc(hCoin(sym))}<span class="h-badge ${tr.c}">${tr.i} ${tr.t}</span></div>
-      <div class="vo" style="margin-top:6px">${hEsc(vol)}</div><div class="can">${can}</div></div>`;
+      <div style="margin-top:8px;font-size:18px;font-weight:800">${r && r.price ? hPrice(r.price) : '—'}</div>
+      <div class="vo">${ch}${ch && vol ? ' · ' : ''}${hEsc(vol)}</div>
+      <div class="vo" style="margin-top:4px">${ai}</div><div class="can">${can}</div></div>`;
   }).join('') || '<div class="h-empty">No coins selected — add some in Settings</div>';
 
   // open trades
