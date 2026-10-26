@@ -4269,13 +4269,22 @@ async function testProxy(){
   try {
     const r = await fetch(url+'/health', { method:'GET' });
     const d = await r.json();
-    if(d.ok || d.status==='ok'){
-      el.textContent='✔ Proxy online — live trading ready!';
+    if(!(d.ok || d.status==='ok')){ el.textContent='Connected but unexpected response'; el.style.color='var(--yellow)'; return; }
+    // Online — now check the Bot Secret against a protected route
+    const secret = document.getElementById('set-bot-secret').value.trim();
+    const a = await fetch(url+'/autopilot/status', { method:'POST', headers:{ 'Content-Type':'application/json', 'X-Bot-Secret':secret }, body:'{}' });
+    if(a.ok){
+      el.textContent='✔ Proxy online · Bot Secret accepted';
       el.style.color='var(--green)';
-      log('PROXY','info','Railway proxy connected ✔ — live orders enabled');
+      log('PROXY','info','Railway proxy connected ✔ — Bot Secret accepted');
     } else {
-      el.textContent='Connected but unexpected response';
-      el.style.color='var(--yellow)';
+      const msg = a.status===401 ? 'wrong Bot Secret — copy BOT_SECRET from Railway'
+                : a.status===429 ? 'too many wrong secrets — wait 10 minutes'
+                : a.status===503 ? 'BOT_SECRET is not set on Railway'
+                : 'HTTP '+a.status;
+      el.textContent='⚠ Proxy online but '+msg;
+      el.style.color='var(--red)';
+      log('PROXY','warn','Proxy online but '+msg);
     }
   } catch(e){
     el.textContent='✗ Cannot reach proxy — check URL';
@@ -4615,7 +4624,8 @@ function log(tag,cls,msg){
   const el=document.getElementById('log');
   const row=document.createElement('div');
   row.className='log-row';
-  row.innerHTML=`<span class="log-t">${time}</span><span class="log-m ${cls}">[${tag}] ${msg}</span>`;
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  row.innerHTML=`<span class="log-t">${time}</span><span class="log-m ${esc(cls)}">[${esc(tag)}] ${esc(msg)}</span>`;
   el.prepend(row);
   if(el.children.length>100) el.lastChild.remove();
 }
@@ -5802,7 +5812,8 @@ Be precise with price levels. Professional institutional tone. Maximum 600 words
     const text = data.content?.map(b => b.text||'').join('') || data.error || 'No response from AI';
 
     // Format nicely — bold headers, numbered sections
-    el.innerHTML = text
+    // Escape first: the reply is untrusted text, only our own formatting becomes HTML
+    el.innerHTML = String(text).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
       .replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--accent)">$1</strong>')
       .replace(/^#{1,3}\s+(.+)$/gm, '<div style="color:var(--yellow);font-weight:700;margin:10px 0 4px;letter-spacing:0.06em;">$1</div>')
       .replace(/^(\d+\.\s+\*\*)/gm, '<br><span style="color:var(--yellow)">$1</span>')
@@ -5814,9 +5825,9 @@ Be precise with price levels. Professional institutional tone. Maximum 600 words
     el.innerHTML = `
       <div style="padding:12px;border:1px solid var(--red2);border-radius:6px;background:rgba(255,45,85,0.05);">
         <div style="color:var(--red);font-weight:700;margin-bottom:6px;">❌ AI Analysis Failed</div>
-        <div style="font-size:0.65rem;color:var(--muted2);">${e.message}</div>
+        <div style="font-size:0.65rem;color:var(--muted2);">${String(e.message).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}</div>
         <div style="font-size:0.6rem;color:var(--muted2);margin-top:8px;">
-          Common causes: proxy not running · wrong proxy URL · missing ANTHROPIC_KEY env var on Railway
+          Common causes: proxy not running · wrong proxy URL or Bot Secret · missing DEEPSEEK_API_KEY on Railway
         </div>
       </div>`;
   }
