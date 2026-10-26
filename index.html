@@ -171,6 +171,13 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 .toggle input:checked+.toggle-slider{background:var(--green2);}
 .toggle input:checked+.toggle-slider::before{transform:translateX(16px);}
 
+.ap-sec{font-size:0.62rem;color:var(--accent);letter-spacing:0.16em;text-transform:uppercase;margin:14px 0 8px;border-bottom:1px solid var(--border2);padding-bottom:4px;}
+.ap-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0 12px;}
+.ap-chk{display:flex;align-items:center;gap:6px;font-size:0.72rem;margin-bottom:14px;cursor:pointer;}
+.ap-list{font-size:0.7rem;}
+.ap-row{padding:6px 8px;border-bottom:1px solid var(--border2);line-height:1.5;}
+.ap-tag{font-size:0.55rem;padding:1px 5px;border-radius:3px;background:var(--bg3);color:var(--muted2);text-transform:uppercase;}
+
 /* ── HEADER ── */
 header{position:relative;z-index:10;display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid var(--border2);background:linear-gradient(180deg,rgba(0,200,255,0.04),transparent);}
 .logo{font-family:var(--font);font-size:1.2rem;font-weight:800;letter-spacing:0.15em;background:linear-gradient(90deg,var(--accent),var(--green));-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 8px rgba(0,200,255,0.35));}
@@ -1229,7 +1236,7 @@ setTimeout(() => {
         </div>
         <div class="form-row">
           <label>Bot Secret Key</label>
-          <input type="password" id="set-bot-secret" value="fuelbot_YWWWYshh4jH4wL8ZWcR5BKa9Szti" placeholder="Same as BOT_SECRET in Railway vars…"/>
+          <input type="password" id="set-bot-secret" value="" placeholder="Same as BOT_SECRET in Railway vars…"/>
           <span class="form-hint">Must match the BOT_SECRET environment variable on Railway</span>
         </div>
         <div class="api-test-row">
@@ -1238,6 +1245,91 @@ setTimeout(() => {
         </div>
       </div>
       <button class="btn btn-accent" onclick="saveRiskSettings()">💾 Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- AI Autopilot Modal — server-side AI trading, all settings live on the Railway proxy -->
+<div class="modal-overlay" id="modal-autopilot">
+  <div class="modal modal-wide" style="width:760px;">
+    <div class="modal-hdr"><span>🤖 AI Autopilot — AI analysis → decision → order</span><button class="modal-close" onclick="closeModal('modal-autopilot')">✕</button></div>
+    <div class="modal-body">
+      <div class="ex-status-row" style="flex-wrap:wrap;">
+        <div>
+          <div style="font-weight:700;" id="ap-state-lbl">Loading…</div>
+          <div style="font-size:0.65rem;color:var(--muted2)" id="ap-state-sub">Runs on the Railway server 24/7 — works with this page closed</div>
+        </div>
+        <div class="toggle-wrap" style="margin-left:auto">
+          <label class="toggle"><input type="checkbox" id="ap-enabled" onchange="apToggle(this.checked)"/><span class="toggle-slider"></span></label>
+          <span id="ap-enabled-lbl" style="font-size:0.68rem;color:var(--muted2)">OFF</span>
+        </div>
+      </div>
+      <div id="ap-halt" class="info-box" style="display:none;border-color:var(--red2);color:var(--red);"></div>
+      <div id="ap-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:16px;"></div>
+
+      <div class="ap-sec">General</div>
+      <div class="ap-grid">
+        <div class="form-row"><label>Mode</label><select id="ap-mode"><option value="paper">📝 Paper (simulated)</option><option value="live">💰 LIVE (real money)</option></select></div>
+        <div class="form-row"><label>Exchange</label><select id="ap-exchange"><option value="mexc">MEXC</option><option value="binance">Binance</option><option value="okx">OKX</option></select></div>
+        <div class="form-row" style="grid-column:1/-1"><label>Coins (comma separated)</label><input type="text" id="ap-symbols" placeholder="BTCUSDT, ETHUSDT, SOLUSDT"/></div>
+        <div class="form-row"><label>Analyse every (minutes)</label><input type="number" id="ap-intervalMinutes" min="1" step="1"/></div>
+        <div class="form-row"><label>Candle count</label><input type="number" id="ap-candleCount" min="60" max="1000" step="10"/></div>
+        <div class="form-row"><label>Main timeframe</label><select id="ap-timeframe"></select></div>
+        <div class="form-row"><label>Trend timeframe</label><select id="ap-higherTimeframe"></select></div>
+      </div>
+
+      <div class="ap-sec">AI</div>
+      <div class="ap-grid">
+        <div class="form-row"><label>Provider</label><select id="ap-aiProvider" onchange="apProviderChanged()"><option value="deepseek">DeepSeek</option><option value="anthropic">Anthropic (Claude)</option><option value="openai">OpenAI</option></select></div>
+        <div class="form-row"><label>Model</label><input type="text" id="ap-aiModel" list="ap-models"/><datalist id="ap-models"></datalist></div>
+        <div class="form-row"><label>Temperature</label><input type="number" id="ap-aiTemperature" min="0" max="1.5" step="0.1"/></div>
+        <div class="form-row"><label>Max reply tokens</label><input type="number" id="ap-aiMaxTokens" min="200" max="4000" step="100"/></div>
+        <div class="form-row" style="grid-column:1/-1"><label>Your strategy instructions for the AI (optional)</label>
+          <textarea id="ap-customInstructions" rows="3" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:0.8rem;" placeholder="e.g. Only buy when the 4h trend is up. Avoid buying when RSI is above 70."></textarea></div>
+      </div>
+
+      <div class="ap-sec">What the AI may do</div>
+      <div class="ap-grid">
+        <label class="ap-chk"><input type="checkbox" id="ap-allowBuy"/> AI may open positions (BUY)</label>
+        <label class="ap-chk"><input type="checkbox" id="ap-allowAiSell"/> AI may close positions (SELL)</label>
+        <label class="ap-chk"><input type="checkbox" id="ap-useAiLevels"/> Use the AI's stop-loss / take-profit</label>
+        <div class="form-row"><label>Min AI confidence (%)</label><input type="number" id="ap-minConfidence" min="0" max="100" step="1"/></div>
+        <div class="form-row"><label>Fallback stop-loss (%)</label><input type="number" id="ap-stopLossPct" min="0.1" step="0.1"/></div>
+        <div class="form-row"><label>Fallback take-profit (%)</label><input type="number" id="ap-takeProfitPct" min="0.1" step="0.1"/></div>
+      </div>
+
+      <div class="ap-sec">Risk limits (enforced by code — the AI cannot override)</div>
+      <div class="ap-grid">
+        <div class="form-row"><label>Trade size (USDT)</label><input type="number" id="ap-tradeSizeUSDT" min="1" step="1"/></div>
+        <div class="form-row"><label>Max open positions</label><input type="number" id="ap-maxOpenPositions" min="1" step="1"/></div>
+        <div class="form-row"><label>Max trades per day</label><input type="number" id="ap-maxTradesPerDay" min="1" step="1"/></div>
+        <div class="form-row"><label>Daily loss limit (USDT) → auto OFF</label><input type="number" id="ap-dailyLossLimitUSDT" min="1" step="1"/></div>
+        <div class="form-row"><label>Min reward : risk</label><input type="number" id="ap-minRiskReward" min="0" step="0.1"/></div>
+        <div class="form-row"><label>Cooldown per coin (min)</label><input type="number" id="ap-cooldownMinutes" min="0" step="5"/></div>
+        <div class="form-row"><label>Min stop distance (%)</label><input type="number" id="ap-minStopLossPct" min="0" step="0.1"/></div>
+        <div class="form-row"><label>Max stop distance (%)</label><input type="number" id="ap-maxStopLossPct" min="0.1" step="0.1"/></div>
+      </div>
+
+      <div class="ap-sec">Paper trading</div>
+      <div class="ap-grid">
+        <div class="form-row"><label>Paper balance (USDT)</label><input type="number" id="ap-paperBalanceUSDT" min="10" step="10"/></div>
+        <div class="form-row"><label>Fee per side (%)</label><input type="number" id="ap-feePct" min="0" step="0.01"/></div>
+      </div>
+
+      <button class="btn btn-accent" onclick="apSave()">💾 Save Autopilot Settings</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px;">
+        <button class="btn btn-outline" onclick="apRunNow()" title="Analyse every coin now. When the autopilot is OFF this is a dry run.">🔍 Analyse now</button>
+        <button class="btn btn-outline" onclick="apResetPaper()">↺ Reset paper</button>
+        <button class="btn btn-outline" style="color:var(--red);border-color:var(--red2);" onclick="apKill()">⛔ KILL SWITCH</button>
+      </div>
+      <div id="ap-msg" style="font-size:0.7rem;margin:10px 0;min-height:1em;"></div>
+
+      <div class="ap-sec">Open positions</div>
+      <div id="ap-positions" class="ap-list"></div>
+      <div class="ap-sec">AI decisions (latest first)</div>
+      <div id="ap-decisions" class="ap-list" style="max-height:260px;overflow-y:auto;"></div>
+      <div class="ap-sec">Closed trades</div>
+      <div id="ap-closed" class="ap-list" style="max-height:200px;overflow-y:auto;"></div>
     </div>
   </div>
 </div>
@@ -1506,6 +1598,7 @@ setTimeout(() => {
     <button onclick="toggleTheme()" id="theme-btn" title="Toggle Light/Dark Mode" style="display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:0.65rem;font-family:var(--mono);cursor:pointer;letter-spacing:0.06em;transition:all 0.2s;"><span id="theme-icon">☀️</span><span id="theme-lbl">LIGHT</span></button>
     <button class="btn btn-icon" onclick="openModal('modal-risk')" title="Risk Settings">⚙</button>
     <button class="btn btn-icon" onclick="openModal('modal-exchange')" title="Exchange APIs">🔑</button>
+    <button class="btn btn-icon" onclick="apOpen()" title="AI Autopilot">🤖</button>
     <button class="btn btn-icon" onclick="openModal('modal-sheets')" title="Google Sheets">📊</button>
     <div class="live-pill"><div class="live-dot"></div>LIVE</div>
     <div id="proxy-pill" style="display:flex;align-items:center;gap:5px;background:rgba(255,45,85,0.07);border:1px solid var(--red2);border-radius:20px;padding:3px 9px;font-size:0.62rem;color:var(--muted2);letter-spacing:0.08em;cursor:pointer;" onclick="openModal('modal-risk')" title="Configure Railway Proxy">
@@ -2166,7 +2259,7 @@ let SETTINGS = {
   aggressiveCool:  240,    // 4h cooldown — quality over quantity
 
   proxyUrl:    'https://fuelbot-api-production.up.railway.app',   // Railway proxy — live
-  botSecret:   'fuelbot_YWWWYshh4jH4wL8ZWcR5BKa9Szti',
+  botSecret:   (()=>{ try { return localStorage.getItem('fb_bot_secret') || ''; } catch(e){ return ''; } })(),  // entered in ⚙ Settings, kept in this browser only
 };
 
 // ─── EXCHANGE CONFIG ──────────────────────────────────────────
@@ -4113,6 +4206,7 @@ function saveRiskSettings(){
   if(!SETTINGS.filterLiq) stopLiquidationStream();
   SETTINGS.proxyUrl  = document.getElementById('set-proxy-url').value.trim().replace(/\/$/,'');
   SETTINGS.botSecret = document.getElementById('set-bot-secret').value.trim();
+  try { localStorage.setItem('fb_bot_secret', SETTINGS.botSecret); } catch(e){}
   document.getElementById('daily-max').textContent=SETTINGS.maxTrades;
   const proxyOk = !!SETTINGS.proxyUrl && !!SETTINGS.botSecret;
   log('SETTINGS','info',`Risk updated · Proxy: ${proxyOk ? '✔ configured' : '✗ not set'}`);
@@ -4269,10 +4363,161 @@ function drawChart(){
 }
 
 // ─── MODALS ───────────────────────────────────────────────────
+
+// ═══════════════════════════════════════════════════════════════
+//  AI AUTOPILOT — settings + status for the server-side engine
+//  (fuelbot-proxy/autopilot.js). The page only edits settings;
+//  analysis and orders run on Railway.
+// ═══════════════════════════════════════════════════════════════
+const AP_TFS = ['1m','5m','15m','30m','1h','4h','1d'];
+const AP_MODELS = { deepseek:['deepseek-chat','deepseek-reasoner'], anthropic:['claude-sonnet-5-5','claude-opus-5-5','claude-haiku-5-5'], openai:['gpt-4o-mini','gpt-4o'] };
+const AP_NUM  = ['intervalMinutes','candleCount','aiTemperature','aiMaxTokens','minConfidence','stopLossPct','takeProfitPct','tradeSizeUSDT','maxOpenPositions','maxTradesPerDay','dailyLossLimitUSDT','minRiskReward','cooldownMinutes','minStopLossPct','maxStopLossPct','paperBalanceUSDT','feePct'];
+const AP_SEL  = ['mode','exchange','timeframe','higherTimeframe','aiProvider'];
+const AP_TXT  = ['aiModel','customInstructions'];
+const AP_BOOL = ['allowBuy','allowAiSell','useAiLevels'];
+let AP = null, apTimer = null;
+
+const apEsc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const apEl  = id => document.getElementById(id);
+function apMsg(t, color){ const m = apEl('ap-msg'); m.textContent = t; m.style.color = color || 'var(--muted2)'; }
+
+async function apCall(route, body){
+  if(!SETTINGS.proxyUrl || !SETTINGS.botSecret) throw new Error('Set the Railway proxy URL and Bot Secret in ⚙ Settings first');
+  const r = await fetch(SETTINGS.proxyUrl + route, { method:'POST',
+    headers:{ 'Content-Type':'application/json', 'X-Bot-Secret':SETTINGS.botSecret }, body:JSON.stringify(body||{}) });
+  const d = await r.json().catch(()=>({ ok:false, error:`HTTP ${r.status}` }));
+  if(!r.ok || d.ok === false) throw new Error(typeof d.error === 'string' ? d.error : JSON.stringify(d.error || d));
+  return d;
+}
+
+async function apOpen(){
+  openModal('modal-autopilot');
+  ['ap-timeframe','ap-higherTimeframe'].forEach(id=>{ apEl(id).innerHTML = AP_TFS.map(t=>`<option value="${t}">${t}</option>`).join(''); });
+  await apRefresh(true);
+  clearInterval(apTimer);
+  apTimer = setInterval(()=>{ if(apEl('modal-autopilot').classList.contains('open')) apRefresh(false); else clearInterval(apTimer); }, 10000);
+}
+
+function apProviderChanged(){
+  const p = apEl('ap-aiProvider').value;
+  apEl('ap-models').innerHTML = (AP_MODELS[p]||[]).map(m=>`<option value="${m}">`).join('');
+  if(!(AP_MODELS[p]||[]).includes(apEl('ap-aiModel').value)) apEl('ap-aiModel').value = AP_MODELS[p][0];
+}
+
+async function apRefresh(fillForm){
+  try {
+    AP = await apCall('/autopilot/status');
+    if(fillForm) apFill(AP.settings);
+    apRender();
+  } catch(e){ apEl('ap-state-lbl').textContent = '⚠ Autopilot unreachable'; apMsg(e.message, 'var(--red)'); }
+}
+
+function apFill(s){
+  AP_NUM.concat(AP_SEL, AP_TXT).forEach(k=>{ const el = apEl('ap-'+k); if(el) el.value = s[k] ?? ''; });
+  AP_BOOL.forEach(k=>{ apEl('ap-'+k).checked = !!s[k]; });
+  apEl('ap-symbols').value = (s.symbols||[]).join(', ');
+  apEl('ap-models').innerHTML = (AP_MODELS[s.aiProvider]||[]).map(m=>`<option value="${m}">`).join('');
+}
+
+function apRender(){
+  const s = AP.settings, st = AP.stats, live = s.mode === 'live';
+  apEl('ap-enabled').checked = s.enabled;
+  apEl('ap-enabled-lbl').textContent = s.enabled ? 'ON' : 'OFF';
+  apEl('ap-enabled-lbl').style.color = s.enabled ? 'var(--green)' : 'var(--muted2)';
+  apEl('ap-state-lbl').innerHTML = `${s.enabled ? '🟢 RUNNING' : '⚪ STOPPED'} · <span style="color:${live?'var(--red)':'var(--yellow)'}">${live?'LIVE — REAL MONEY':'PAPER'}</span> · ${apEsc(s.exchange.toUpperCase())} · ${apEsc(s.aiProvider)}/${apEsc(s.aiModel)}`;
+  apEl('ap-state-sub').textContent = (AP.aiKeySet ? '' : `⚠ No ${s.aiProvider.toUpperCase()} key in Railway variables · `) +
+    (AP.running ? 'Analysing now…' : AP.nextRun ? `Next analysis ${new Date(AP.nextRun).toLocaleTimeString()}` : 'Runs on Railway 24/7 — works with this page closed');
+  const h = apEl('ap-halt'); h.style.display = AP.haltReason ? 'block' : 'none'; h.textContent = AP.haltReason ? '⛔ ' + AP.haltReason : '';
+  const money = v => `<span style="color:${v>=0?'var(--green)':'var(--red)'}">${v>=0?'+':''}${Number(v).toFixed(2)}</span>`;
+  const tile = (l,v) => `<div style="background:var(--bg3);border-radius:4px;padding:8px;"><div style="font-size:0.58rem;color:var(--muted2);letter-spacing:0.12em;">${l}</div><div style="font-size:0.95rem;font-weight:700;">${v}</div></div>`;
+  apEl('ap-stats').innerHTML = tile('TODAY P&L', money(st.today.pnl)) + tile('TODAY TRADES', `${st.today.trades} / ${s.maxTradesPerDay}`) +
+    tile('ALL-TIME P&L', money(st.allTime.pnl)) + tile('WIN RATE', `${st.allTime.winRate}% <span style="font-size:0.6rem;color:var(--muted2)">(${st.allTime.trades})</span>`) +
+    tile('OPEN P&L', money(st.unrealizedPnl)) + (live ? '' : tile('PAPER CASH', '$'+st.paperCash.toFixed(2)));
+
+  apEl('ap-positions').innerHTML = AP.positions.length ? AP.positions.map(p=>`<div class="ap-row">
+      <b>${apEsc(p.symbol)}</b> <span class="ap-tag">${apEsc(p.mode)}</span> $${Number(p.sizeUSDT).toFixed(2)} @ ${apEsc(p.entry.toPrecision(6))}
+      · SL ${apEsc(p.sl)} · TP ${apEsc(p.tp)} ${p.last ? '· now '+apEsc(p.last)+' '+money(p.qty*p.last-p.sizeUSDT) : ''}
+      ${p.exitError ? '<span style="color:var(--red)"> ⚠ exit order failed</span>' : ''}
+      <button class="btn btn-sm btn-outline" style="float:right" onclick="apClose('${apEsc(p.id)}')">Close</button></div>`).join('')
+    : '<div class="ap-row" style="color:var(--muted2)">No open positions</div>';
+
+  const actColor = a => a==='BUY' ? 'var(--green)' : (a==='SELL' || a==='ERROR') ? 'var(--red)' : 'var(--muted2)';
+  apEl('ap-decisions').innerHTML = AP.decisions.length ? AP.decisions.map(d=>`<div class="ap-row">
+      <span style="color:var(--muted2)">${new Date(d.at).toLocaleString()}</span> <b>${apEsc(d.symbol)}</b>
+      <b style="color:${actColor(d.action)}">${apEsc(d.action)}</b>${d.confidence!=null ? ' '+apEsc(d.confidence)+'%' : ''}
+      ${d.price ? '@ '+apEsc(d.price) : ''} → <i>${apEsc(d.outcome)}</i>
+      ${d.reason ? `<div style="color:var(--muted2);font-size:0.65rem;">${apEsc(d.reason)}</div>` : ''}</div>`).join('')
+    : '<div class="ap-row" style="color:var(--muted2)">No decisions yet — press 🔍 Analyse now</div>';
+
+  apEl('ap-closed').innerHTML = AP.closed.length ? AP.closed.map(c=>`<div class="ap-row">
+      <span style="color:var(--muted2)">${new Date(c.closedAt).toLocaleString()}</span> <b>${apEsc(c.symbol)}</b> <span class="ap-tag">${apEsc(c.mode)}</span>
+      ${apEsc(c.entry.toPrecision(6))} → ${apEsc(Number(c.exit).toPrecision(6))} (${apEsc(c.why)}) ${money(c.pnl)}${c.estimated?' <span style="color:var(--muted2)">est.</span>':''}</div>`).join('')
+    : '<div class="ap-row" style="color:var(--muted2)">No closed trades yet</div>';
+}
+
+function apCollect(){
+  const out = {};
+  AP_NUM.forEach(k=>{ const v = apEl('ap-'+k).value; if(v !== '') out[k] = parseFloat(v); });
+  AP_SEL.concat(AP_TXT).forEach(k=>{ out[k] = apEl('ap-'+k).value; });
+  AP_BOOL.forEach(k=>{ out[k] = apEl('ap-'+k).checked; });
+  out.symbols = apEl('ap-symbols').value;
+  return out;
+}
+
+async function apSend(settings){
+  const goingLive = settings.mode === 'live' && AP && AP.settings.mode !== 'live';
+  if(goingLive && !confirm(`⚠ Switch the AI Autopilot to LIVE?\n\nThe AI will place REAL orders on ${(settings.exchange||AP.settings.exchange).toUpperCase()} with up to $${settings.tradeSizeUSDT ?? AP.settings.tradeSizeUSDT} per trade, without asking you.\n\nPress OK only if you accept losing that money.`)){
+    apEl('ap-mode').value = AP.settings.mode; return false;
+  }
+  AP = await apCall('/autopilot/settings', { settings, confirmLive: goingLive });
+  apFill(AP.settings); apRender();
+  return true;
+}
+
+async function apSave(){
+  try { if(await apSend(apCollect())){ apMsg('✔ Saved on the server', 'var(--green)'); log('AUTOPILOT','info','AI Autopilot settings saved'); } }
+  catch(e){ apMsg(e.message, 'var(--red)'); }
+}
+
+async function apToggle(on){
+  try {
+    const s = apCollect(); s.enabled = on;
+    if(!(await apSend(s))){ apEl('ap-enabled').checked = !on; return; }
+    apMsg(on ? `✔ Autopilot ON (${AP.settings.mode.toUpperCase()}) — first analysis within seconds` : 'Autopilot OFF — open positions keep their TP/SL', on ? 'var(--green)' : 'var(--muted2)');
+    log('AUTOPILOT', on ? 'warn' : 'info', `AI Autopilot ${on ? 'ON · '+AP.settings.mode.toUpperCase() : 'OFF'}`);
+  } catch(e){ apEl('ap-enabled').checked = !on; apMsg(e.message, 'var(--red)'); }
+}
+
+async function apRunNow(){
+  apMsg('Analysing every coin with the AI… (can take a minute)', 'var(--yellow)');
+  try { const r = await apCall('/autopilot/run-now'); apMsg(r.note || '✔ Analysis done', r.note ? 'var(--yellow)' : 'var(--green)'); await apRefresh(false); }
+  catch(e){ apMsg(e.message, 'var(--red)'); }
+}
+
+async function apClose(id){
+  if(!confirm('Close this position now at market price?')) return;
+  try { AP = await apCall('/autopilot/close', { id }); apRender(); apMsg('✔ Position closed', 'var(--green)'); }
+  catch(e){ apMsg(e.message, 'var(--red)'); }
+}
+
+async function apKill(){
+  const closeAll = confirm('⛔ KILL SWITCH — the autopilot will be turned OFF now.\n\nAlso SELL every position the autopilot holds at market price?\n\nOK = turn off AND sell all · Cancel = only turn off');
+  try { AP = await apCall('/autopilot/kill', { closeAll }); apFill(AP.settings); apRender();
+        apMsg(AP.errors?.length ? '⚠ OFF, but some closes failed: '+AP.errors.join('; ') : '⛔ Autopilot stopped' + (closeAll ? ' and positions sold' : ''), 'var(--red)'); }
+  catch(e){ apMsg(e.message, 'var(--red)'); }
+}
+
+async function apResetPaper(){
+  if(!confirm('Reset the paper balance and erase paper trade history?')) return;
+  try { AP = await apCall('/autopilot/reset-paper'); apRender(); apMsg('✔ Paper account reset', 'var(--green)'); }
+  catch(e){ apMsg(e.message, 'var(--red)'); }
+}
+
 function openModal(id){
   document.getElementById(id).classList.add('open');
   if(id==='modal-risk'){
     const el=i=>document.getElementById(i);
+    if(el('set-bot-secret'))     el('set-bot-secret').value     = SETTINGS.botSecret    || '';
     if(el('set-min-score'))      el('set-min-score').value      = SETTINGS.minScore     || 7.0;
     if(el('set-max-trades-top')) el('set-max-trades-top').value = SETTINGS.maxTrades    || 5;
     if(el('set-cooldown'))       el('set-cooldown').value       = SETTINGS.cooldownMins || 30;
