@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <title>FuelBot PRO v5 — Secure</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@300;400;600;700;800&family=JetBrains+Mono:wght@300;400;600&display=swap" rel="stylesheet"/>
 <style>
 :root {
@@ -6351,6 +6352,504 @@ function toggleStargatePanel() {
     </div>
   </div>
 </div>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     HOME — the simple, plain-language view of the AI Autopilot.
+     The full "Pro view" (charts, signals, exchanges) is one click away.
+     Uses the same server calls as the 🤖 panel (apCall / apSend / AP).
+     ══════════════════════════════════════════════════════════════ -->
+<style>
+#home{
+  --h-bg:#0b1020; --h-bg2:#11182c; --h-card:#151d33; --h-card2:#1b2540; --h-line:#25304d;
+  --h-text:#e8ecf6; --h-dim:#93a0bd; --h-faint:#5f6b88;
+  --h-blue:#5b8cff; --h-green:#2fd27e; --h-red:#ff5a6e; --h-amber:#ffb547; --h-violet:#a78bfa;
+  --h-shadow:0 10px 30px rgba(0,0,0,.35);
+  position:fixed; inset:0; z-index:900; overflow-y:auto; background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(91,140,255,.18), transparent 60%),
+    radial-gradient(900px 500px at 110% 10%, rgba(167,139,250,.14), transparent 60%), var(--h-bg);
+  color:var(--h-text); font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif; font-size:15px; line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+}
+[data-theme="light"] #home{
+  --h-bg:#f4f6fb; --h-bg2:#ffffff; --h-card:#ffffff; --h-card2:#f1f4fa; --h-line:#e3e8f2;
+  --h-text:#141a2b; --h-dim:#5a6680; --h-faint:#8a94ab; --h-shadow:0 8px 24px rgba(20,30,60,.08);
+}
+#home.hidden{display:none}
+#home *{box-sizing:border-box}
+#home .h-wrap{max-width:1180px;margin:0 auto;padding:20px 20px 60px}
+#home .h-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+#home .h-logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:-.02em}
+#home .h-logo i{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-style:normal;
+  background:linear-gradient(135deg,var(--h-blue),var(--h-violet));color:#fff;font-size:18px;box-shadow:0 6px 18px rgba(91,140,255,.4)}
+#home .h-spacer{flex:1}
+#home .h-pill{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;font-size:13px;font-weight:600;
+  background:var(--h-card);border:1px solid var(--h-line);color:var(--h-dim);white-space:nowrap}
+#home .h-dot{width:8px;height:8px;border-radius:50%;background:var(--h-faint)}
+#home .h-dot.on{background:var(--h-green);box-shadow:0 0 0 4px rgba(47,210,126,.18)}
+#home .h-dot.off{background:var(--h-red)}
+#home .h-btn{appearance:none;border:1px solid var(--h-line);background:var(--h-card);color:var(--h-text);font:inherit;font-weight:600;
+  font-size:14px;padding:9px 16px;border-radius:12px;cursor:pointer;transition:transform .08s, background .2s, border-color .2s}
+#home .h-btn:hover{border-color:var(--h-blue)}
+#home .h-btn:active{transform:scale(.98)}
+#home .h-btn.primary{background:var(--h-blue);border-color:var(--h-blue);color:#fff}
+#home .h-btn.danger{color:var(--h-red);border-color:rgba(255,90,110,.45)}
+#home .h-btn.danger:hover{background:rgba(255,90,110,.1)}
+#home .h-btn.ghost{background:transparent}
+#home .h-btn:disabled{opacity:.5;cursor:not-allowed}
+#home .h-grid{display:grid;gap:16px}
+#home .h-card{background:var(--h-card);border:1px solid var(--h-line);border-radius:18px;padding:20px;box-shadow:var(--h-shadow)}
+#home .h-card h3{margin:0 0 4px;font-size:16px;font-weight:700;letter-spacing:-.01em}
+#home .h-sub{color:var(--h-dim);font-size:13.5px;margin:0}
+#home .h-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+
+/* hero */
+#home .h-hero{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:16px}
+#home .h-status{position:relative;overflow:hidden}
+#home .h-status .big{font-size:28px;font-weight:800;letter-spacing:-.02em;margin:6px 0 6px;display:flex;align-items:center;gap:12px}
+#home .h-status .big .pulse{width:14px;height:14px;border-radius:50%;background:var(--h-faint);flex:none}
+#home .h-status.running .big .pulse{background:var(--h-green);animation:hpulse 1.8s infinite}
+@keyframes hpulse{0%{box-shadow:0 0 0 0 rgba(47,210,126,.55)}70%{box-shadow:0 0 0 14px rgba(47,210,126,0)}100%{box-shadow:0 0 0 0 rgba(47,210,126,0)}}
+#home .h-status .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+#home .h-seg{display:inline-flex;background:var(--h-card2);border:1px solid var(--h-line);border-radius:12px;padding:3px}
+#home .h-seg button{appearance:none;border:0;background:transparent;color:var(--h-dim);font:inherit;font-weight:600;font-size:13.5px;
+  padding:7px 14px;border-radius:9px;cursor:pointer}
+#home .h-seg button.on{background:var(--h-card);color:var(--h-text);box-shadow:0 2px 8px rgba(0,0,0,.18)}
+#home .h-seg button.on.live{background:var(--h-red);color:#fff}
+#home .h-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;
+  letter-spacing:.02em;text-transform:uppercase}
+#home .b-paper{background:rgba(255,181,71,.14);color:var(--h-amber)}
+#home .b-live{background:rgba(255,90,110,.15);color:var(--h-red)}
+#home .b-up{background:rgba(47,210,126,.14);color:var(--h-green)}
+#home .b-down{background:rgba(255,90,110,.14);color:var(--h-red)}
+#home .b-side{background:rgba(255,181,71,.14);color:var(--h-amber)}
+#home .b-dim{background:var(--h-card2);color:var(--h-dim)}
+
+/* how it works */
+#home .h-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:4px}
+#home .h-step{background:var(--h-card2);border-radius:12px;padding:10px 12px;font-size:12.5px;color:var(--h-dim)}
+#home .h-step b{display:block;color:var(--h-text);font-size:13px;margin-bottom:2px}
+
+/* kpis */
+#home .h-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
+#home .h-kpi{padding:16px}
+#home .h-kpi .lbl{font-size:12.5px;color:var(--h-dim);font-weight:600;display:flex;align-items:center;gap:6px}
+#home .h-kpi .val{font-size:24px;font-weight:800;letter-spacing:-.02em;margin-top:6px}
+#home .h-kpi .hint{font-size:12px;color:var(--h-faint);margin-top:2px}
+#home .pos{color:var(--h-green)} #home .neg{color:var(--h-red)}
+
+/* two columns */
+#home .h-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+
+/* market mood */
+#home .h-coins{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+#home .h-coin{background:var(--h-card2);border-radius:14px;padding:14px;border:1px solid transparent}
+#home .h-coin .nm{font-weight:800;font-size:16px;display:flex;justify-content:space-between;align-items:center}
+#home .h-coin .tr{font-size:14px;font-weight:700;margin-top:8px}
+#home .h-coin .vo{font-size:12.5px;color:var(--h-dim)}
+#home .h-coin .can{font-size:12.5px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--h-line);color:var(--h-dim)}
+
+/* feed */
+#home .h-feed{display:flex;flex-direction:column;gap:10px;max-height:460px;overflow-y:auto;padding-right:4px}
+#home .h-item{display:grid;grid-template-columns:40px 1fr;gap:12px;padding:12px;border-radius:14px;background:var(--h-card2)}
+#home .h-ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-size:18px;font-weight:800}
+#home .ic-buy{background:rgba(47,210,126,.15);color:var(--h-green)}
+#home .ic-sell{background:rgba(255,90,110,.15);color:var(--h-red)}
+#home .ic-wait{background:rgba(147,160,189,.15);color:var(--h-dim)}
+#home .ic-err{background:rgba(255,181,71,.15);color:var(--h-amber)}
+#home .h-item .t1{font-weight:700;font-size:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#home .h-item .t2{font-size:13.5px;margin-top:2px}
+#home .h-item .t3{font-size:12.5px;color:var(--h-dim);margin-top:4px;font-style:italic}
+#home .h-item .tm{font-size:12px;color:var(--h-faint);font-weight:500}
+#home .h-meter{height:6px;border-radius:6px;background:var(--h-line);overflow:hidden;width:70px;display:inline-block;vertical-align:middle}
+#home .h-meter i{display:block;height:100%;background:var(--h-blue)}
+
+/* trades */
+#home .h-trade{background:var(--h-card2);border-radius:14px;padding:14px;margin-bottom:10px}
+#home .h-trade .top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+#home .h-trade .pl{font-size:20px;font-weight:800}
+#home .h-range{position:relative;height:8px;border-radius:8px;margin:16px 0 6px;
+  background:linear-gradient(90deg,rgba(255,90,110,.55),rgba(255,181,71,.45) 45%,rgba(47,210,126,.6))}
+#home .h-range i{position:absolute;top:50%;width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--h-blue);
+  transform:translate(-50%,-50%);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+#home .h-range-lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--h-dim)}
+#home .h-hist{width:100%;border-collapse:collapse;font-size:13.5px}
+#home .h-hist td{padding:9px 6px;border-bottom:1px solid var(--h-line)}
+#home .h-hist tr:last-child td{border-bottom:0}
+#home .h-empty{color:var(--h-dim);font-size:14px;padding:18px;text-align:center;background:var(--h-card2);border-radius:14px}
+
+/* connect + settings sheet */
+#home .h-connect{max-width:520px;margin:8vh auto 0;text-align:center}
+#home .h-connect input,#home .h-field input,#home .h-field select{width:100%;font:inherit;font-size:15px;padding:12px 14px;border-radius:12px;
+  border:1px solid var(--h-line);background:var(--h-card2);color:var(--h-text);outline:none}
+#home .h-connect input:focus,#home .h-field input:focus,#home .h-field select:focus{border-color:var(--h-blue)}
+#home .h-sheet{position:fixed;inset:0;z-index:950;background:rgba(5,8,18,.55);backdrop-filter:blur(4px);display:none;justify-content:flex-end}
+#home .h-sheet.open{display:flex}
+#home .h-sheet .panel{width:min(460px,100%);height:100%;overflow-y:auto;background:var(--h-bg2);padding:24px;border-left:1px solid var(--h-line)}
+#home .h-field{margin-bottom:16px}
+#home .h-field label{display:block;font-weight:600;font-size:14px;margin-bottom:6px}
+#home .h-field .h-sub{margin-top:5px}
+#home .h-presets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+#home .h-preset{border:1px solid var(--h-line);background:var(--h-card2);border-radius:12px;padding:10px;cursor:pointer;text-align:left;color:var(--h-text);font:inherit}
+#home .h-preset b{display:block;font-size:14px}
+#home .h-preset span{font-size:12px;color:var(--h-dim)}
+#home .h-preset.on{border-color:var(--h-blue);box-shadow:0 0 0 3px rgba(91,140,255,.2)}
+#home .h-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--h-text);color:var(--h-bg);
+  padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px;z-index:960;opacity:0;transition:opacity .25s;pointer-events:none}
+#home .h-toast.show{opacity:1}
+#home .h-q{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;background:var(--h-card2);color:var(--h-faint);
+  font-size:11px;font-weight:700;cursor:help}
+#home-back{position:fixed;right:18px;bottom:18px;z-index:890;display:none;padding:12px 18px;border-radius:14px;border:0;cursor:pointer;
+  background:linear-gradient(135deg,#5b8cff,#a78bfa);color:#fff;font:600 14px 'Inter',system-ui,sans-serif;box-shadow:0 10px 30px rgba(91,140,255,.45)}
+
+@media (max-width:900px){
+  #home .h-hero,#home .h-cols{grid-template-columns:1fr}
+  #home .h-kpis{grid-template-columns:repeat(2,1fr)}
+  #home .h-steps{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:480px){
+  #home .h-wrap{padding:14px 14px 50px}
+  #home .h-status .big{font-size:22px}
+  #home .h-kpi .val{font-size:20px}
+}
+</style>
+
+<div id="home">
+  <div class="h-wrap">
+    <div class="h-top">
+      <div class="h-logo"><i>⛽</i>FuelBot</div>
+      <span class="h-pill" id="hm-conn"><span class="h-dot"></span>Connecting…</span>
+      <span class="h-spacer"></span>
+      <button class="h-btn ghost" onclick="toggleTheme()" title="Switch light / dark">🌓</button>
+      <button class="h-btn" onclick="homeOpenSettings()">⚙ Settings</button>
+      <button class="h-btn" onclick="homeShowPro()" title="Charts, signals and exchange tools">Pro view →</button>
+    </div>
+
+    <!-- Not connected yet -->
+    <div id="hm-connect" class="h-card h-connect" style="display:none">
+      <div style="font-size:42px">🔌</div>
+      <h3 style="font-size:22px;margin:8px 0">Connect to your bot</h3>
+      <p class="h-sub" style="margin-bottom:18px">Your bot runs on Railway 24/7. Paste its <b>Bot Secret</b> once so this page can show what it's doing.<br>
+        Find it in <b>Railway → fuelbot-api → Variables → BOT_SECRET</b> (click the 👁 eye, then copy).</p>
+      <input id="hm-secret" type="password" placeholder="Paste the Bot Secret" autocomplete="off"/>
+      <div id="hm-connect-err" class="h-sub" style="color:var(--h-red);min-height:20px;margin-top:8px"></div>
+      <button class="h-btn primary" style="width:100%;padding:12px" onclick="homeConnect()">Connect</button>
+    </div>
+
+    <!-- Main -->
+    <div id="hm-main" style="display:none">
+      <div class="h-hero">
+        <div class="h-card h-status" id="hm-status">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <span class="h-badge b-paper" id="hm-mode-badge">Practice money</span>
+            <span class="h-badge b-dim" id="hm-ai-badge">AI · DeepSeek</span>
+          </div>
+          <div class="big"><span class="pulse"></span><span id="hm-state">—</span></div>
+          <p class="h-sub" id="hm-state-sub">—</p>
+          <div class="row">
+            <button class="h-btn primary" id="hm-start" onclick="homeStartStop()">Start</button>
+            <div class="h-seg" role="group" aria-label="Money mode">
+              <button id="hm-m-paper" onclick="homeSetMode('paper')">🧪 Practice</button>
+              <button id="hm-m-live" onclick="homeSetMode('live')">💰 Real money</button>
+            </div>
+            <button class="h-btn" onclick="homeRunNow()" title="Ask the AI to check every coin right now">🔍 Check now</button>
+          </div>
+          <div class="h-sub" id="hm-last" style="margin-top:18px;padding-top:14px;border-top:1px solid var(--h-line)"></div>
+          <div id="hm-halt" class="h-sub" style="display:none;margin-top:14px;padding:10px 12px;border-radius:12px;background:rgba(255,90,110,.12);color:var(--h-red);font-weight:600"></div>
+        </div>
+        <div class="h-card">
+          <h3>How your bot works</h3>
+          <p class="h-sub" style="margin-bottom:12px">Every few minutes, for each coin:</p>
+          <div class="h-steps">
+            <div class="h-step"><b>1 · Reads the market</b>Prices on 3 timeframes, trend, volatility</div>
+            <div class="h-step"><b>2 · AI decides</b>DeepSeek says Buy, Sell or Wait — and why</div>
+            <div class="h-step"><b>3 · Safety check</b>Your limits can veto any AI decision</div>
+            <div class="h-step"><b>4 · Trades safely</b>Every buy gets a stop-loss and a target</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+            <button class="h-btn danger" onclick="homeKill()" title="Stops the bot immediately">⛔ Emergency stop</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="h-kpis">
+        <div class="h-card h-kpi"><div class="lbl">Today</div><div class="val" id="hm-k-today">—</div><div class="hint" id="hm-k-today-h">profit / loss</div></div>
+        <div class="h-card h-kpi"><div class="lbl">All time</div><div class="val" id="hm-k-all">—</div><div class="hint">closed trades</div></div>
+        <div class="h-card h-kpi"><div class="lbl">Win rate <span class="h-q" title="Share of closed trades that made money">?</span></div><div class="val" id="hm-k-win">—</div><div class="hint" id="hm-k-win-h">—</div></div>
+        <div class="h-card h-kpi"><div class="lbl">Open trades</div><div class="val" id="hm-k-open">—</div><div class="hint" id="hm-k-open-h">—</div></div>
+        <div class="h-card h-kpi"><div class="lbl" id="hm-k-bal-l">Practice balance</div><div class="val" id="hm-k-bal">—</div><div class="hint" id="hm-k-bal-h">simulated USDT</div></div>
+      </div>
+
+      <div class="h-cols">
+        <div class="h-card">
+          <div class="h-head"><div><h3>Market mood</h3><p class="h-sub">What each coin is doing — and whether the bot is allowed to buy it</p></div></div>
+          <div class="h-coins" id="hm-coins"></div>
+        </div>
+        <div class="h-card">
+          <div class="h-head"><div><h3>Open trades</h3><p class="h-sub">Each trade has a safety stop (left) and a profit target (right)</p></div></div>
+          <div id="hm-trades"></div>
+        </div>
+      </div>
+
+      <div class="h-cols">
+        <div class="h-card">
+          <div class="h-head"><div><h3>What the AI is thinking</h3><p class="h-sub">Every decision, in plain words — newest first</p></div></div>
+          <div class="h-feed" id="hm-feed"></div>
+        </div>
+        <div class="h-card">
+          <div class="h-head"><div><h3>Trade history</h3><p class="h-sub">Closed trades and how they ended</p></div></div>
+          <div id="hm-hist"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings sheet -->
+  <div class="h-sheet" id="hm-sheet" onclick="if(event.target===this)homeCloseSettings()">
+    <div class="panel">
+      <div class="h-head"><div><h3 style="font-size:20px">Settings</h3><p class="h-sub">The essentials. Every detail is under “All settings”.</p></div>
+        <button class="h-btn ghost" onclick="homeCloseSettings()">✕</button></div>
+
+      <div class="h-field"><label>Trading style</label>
+        <div class="h-presets" id="hm-presets">
+          <button class="h-preset" data-p="careful"><b>🛡 Careful</b><span>Fewer, surer trades</span></button>
+          <button class="h-preset" data-p="balanced"><b>⚖ Balanced</b><span>Recommended</span></button>
+          <button class="h-preset" data-p="aggressive"><b>🚀 Bold</b><span>More trades, more risk</span></button>
+        </div>
+        <p class="h-sub" id="hm-preset-note"></p>
+      </div>
+      <div class="h-field"><label for="h-coins-in">Coins to trade</label>
+        <input id="hm-coins-in" placeholder="BTC, ETH, SOL"/>
+        <p class="h-sub">Separate with commas. “BTC” means BTC/USDT.</p></div>
+      <div class="h-field"><label for="h-size">Money per trade (USDT)</label>
+        <input id="hm-size" type="number" min="1" step="1"/>
+        <p class="h-sub">Start small — $10 is a good first live size.</p></div>
+      <div class="h-field"><label for="h-loss">Stop for the day after losing (USDT)</label>
+        <input id="hm-loss" type="number" min="1" step="1"/>
+        <p class="h-sub">The bot switches itself off when today's losses reach this.</p></div>
+      <div class="h-field"><label for="h-every">Check the market every</label>
+        <select id="hm-every"><option value="5">5 minutes</option><option value="15">15 minutes (recommended)</option><option value="30">30 minutes</option><option value="60">1 hour</option></select></div>
+      <div style="display:flex;gap:10px;margin-top:8px">
+        <button class="h-btn primary" style="flex:1" onclick="homeSaveSettings()">Save</button>
+        <button class="h-btn" onclick="homeCloseSettings();apOpen()">All settings…</button>
+      </div>
+      <p class="h-sub" style="margin-top:16px">Bot address and secret: <a href="#" style="color:var(--h-blue)" onclick="homeCloseSettings();homeShowPro();openModal('modal-risk');return false">connection settings</a></p>
+    </div>
+  </div>
+  <div class="h-toast" id="hm-toast"></div>
+</div>
+<button id="home-back" onclick="homeShowHome()">← Simple view</button>
+
+<script>
+// ── Home: simple view of the AI Autopilot ─────────────────────
+const H$ = id => document.getElementById(id);
+const hEsc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const hMoney = v => { const n = Number(v)||0; return `${n>=0?'+':'−'}$${Math.abs(n).toFixed(2)}`; };
+const hCls = v => (Number(v)||0) > 0 ? 'pos' : (Number(v)||0) < 0 ? 'neg' : '';
+const hCoin = s => String(s||'').replace(/USDT$/,'');
+const hAgo = t => { const m = Math.round((Date.now()-new Date(t))/6e4); return m<1?'just now':m<60?`${m} min ago`:m<1440?`${Math.round(m/60)} h ago`:new Date(t).toLocaleDateString(); };
+const hPrice = v => { const n=+v; if(!isFinite(n)) return '—'; return '$'+(n>=100?n.toLocaleString(undefined,{maximumFractionDigits:2}):n.toPrecision(4)); };
+let homeTimer = null;
+
+function homeToast(t){ const el=H$('hm-toast'); el.textContent=t; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),2600); }
+
+// Plain-language versions of the engine's outcomes
+function homeOutcome(o, d){
+  o = String(o||''); const coin = hCoin(d.symbol);
+  const m = (re) => o.match(re);
+  let r;
+  if(o==='hold') return 'Waiting — no good opportunity right now';
+  if(o==='holding position') return 'Keeping the open trade';
+  if(o.startsWith('opened')) return `Bought ${coin}${/paper/.test(o)?' (practice)':''}`;
+  if(o==='closed position') return `Sold ${coin} — trade closed`;
+  if((r=m(/^raised stop (.+) → (.+)$/))) return `Moved the safety stop up to ${hPrice(r[2])} to protect profit`;
+  if((r=m(/^blocked: BTC in downtrend/))) return 'Not buying — Bitcoin is falling, other coins usually follow';
+  if((r=m(/^blocked: (\w+) in downtrend/))) return `Not buying — ${hCoin(r[1])} is in a falling market`;
+  if((r=m(/^blocked: max (\d+) open positions/))) return `Not buying — already holding the maximum of ${r[1]} trades`;
+  if((r=m(/^blocked: max (\d+) trades today/))) return `Daily limit of ${r[1]} trades reached`;
+  if(/^blocked: cooldown/.test(o)) return 'Short pause after the last trade on this coin';
+  if(/^blocked: paused after losing streak/.test(o)) return 'Taking a break after several losses in a row';
+  if(/daily loss limit/.test(o)) return 'Stopped for today — daily loss limit reached';
+  if(/^blocked: Kill switch/.test(o)) return 'Stopped by the emergency stop';
+  if((r=m(/^ignored: confidence (\d+) < (\d+)/))) return `Not sure enough — ${r[1]}% confident, needs ${r[2]}%`;
+  if(/^rejected: reward:risk/.test(o)) return 'Possible profit too small for the risk';
+  if(/^rejected: .*stop/i.test(o) || /take-profit/.test(o)) return "The AI's stop-loss or target didn't fit your safety rules";
+  if(/^rejected: adapted size/.test(o)) return 'Trade would be smaller than the exchange minimum';
+  if(/^dry run: would BUY/.test(o)) return 'Would buy — test only, the bot is stopped';
+  if(/^dry run/.test(o)) return 'Test only — the bot is stopped';
+  if(/^ignored: SELL with no open position/.test(o)) return 'Expects a drop — nothing to sell, so it waits';
+  if(/^ignored: buying disabled/.test(o)) return 'Buying is switched off in settings';
+  return o;
+}
+
+function homeTrend(r){
+  if(!r) return { t:'Checking…', c:'b-dim', i:'·' };
+  return r.trend==='uptrend' ? { t:'Rising', c:'b-up', i:'↗' } : r.trend==='downtrend' ? { t:'Falling', c:'b-down', i:'↘' } : { t:'Sideways', c:'b-side', i:'→' };
+}
+
+async function homeRefresh(){
+  if(!SETTINGS.proxyUrl || !SETTINGS.botSecret){ homeShowConnect(); return; }
+  try {
+    AP = await apCall('/autopilot/status');
+    H$('hm-connect').style.display='none'; H$('hm-main').style.display='';
+    homeRender();
+  } catch(e){
+    if(/Unauthorized|401|Bot Secret/.test(e.message)) homeShowConnect('That secret was not accepted — copy it again from Railway.');
+    else { homeConn(false, 'Bot unreachable'); if(!AP) homeShowConnect('Could not reach the bot: '+e.message); }
+  }
+}
+
+function homeConn(ok, txt){ H$('hm-conn').innerHTML = `<span class="h-dot ${ok?'on':'off'}"></span>${hEsc(txt)}`; }
+function homeShowConnect(err){
+  homeConn(false,'Not connected'); H$('hm-main').style.display='none'; H$('hm-connect').style.display='';
+  H$('hm-connect-err').textContent = err || '';
+}
+async function homeConnect(){
+  const v = H$('hm-secret').value.trim();
+  if(!v){ H$('hm-connect-err').textContent='Paste the Bot Secret first'; return; }
+  SETTINGS.botSecret = v;
+  if(!SETTINGS.proxyUrl) SETTINGS.proxyUrl = 'https://fuelbot-api-production.up.railway.app';
+  try { localStorage.setItem('fb_bot_secret', v); } catch(e){}
+  const field = document.getElementById('set-bot-secret'); if(field) field.value = v;
+  if(typeof checkProxy==='function') checkProxy();
+  H$('hm-connect-err').textContent='Connecting…';
+  await homeRefresh();
+}
+
+function homeRender(){
+  const s = AP.settings, st = AP.stats, live = s.mode==='live', on = s.enabled;
+  homeConn(true, 'Connected to your bot');
+  // status
+  H$('hm-status').classList.toggle('running', on);
+  H$('hm-state').textContent = on ? (AP.running ? 'Checking the market…' : 'Bot is running') : 'Bot is stopped';
+  const coins = (s.symbols||[]).map(hCoin).join(', ');
+  const next = AP.nextRun ? Math.max(0, Math.round((AP.nextRun-Date.now())/6e4)) : null;
+  H$('hm-state-sub').textContent = on
+    ? `Watching ${coins} · next check ${next===null?'soon':next<=0?'any moment':'in '+next+' min'} · ${live?'trades with REAL money':'practice only — no real money'}`
+    : `Press Start to let the AI watch ${coins}. ${live?'It will trade REAL money.':'It will use practice money.'}`;
+  if(!AP.aiKeySet) H$('hm-state-sub').textContent += ` · ⚠ No ${s.aiProvider} key on Railway`;
+  const sb = H$('hm-start'); sb.textContent = on ? '⏸ Stop' : '▶ Start'; sb.classList.toggle('primary', !on);
+  H$('hm-mode-badge').className = 'h-badge ' + (live?'b-live':'b-paper');
+  H$('hm-mode-badge').textContent = live ? 'Real money' : 'Practice money';
+  H$('hm-ai-badge').textContent = `AI · ${s.aiProvider==='deepseek'?'DeepSeek':s.aiProvider==='anthropic'?'Claude':'OpenAI'}`;
+  H$('hm-m-paper').className = live ? '' : 'on';
+  H$('hm-m-live').className  = live ? 'on live' : '';
+  const dToday = (AP.decisions||[]).filter(d => new Date(d.at).toDateString() === new Date().toDateString()).length;
+  H$('hm-last').textContent = AP.lastRun ? `Last AI check ${hAgo(AP.lastRun)} · ${dToday} decision${dToday===1?'':'s'} today · ${s.exchange.toUpperCase()} · every ${s.intervalMinutes} min` : `No AI check yet since the last restart · ${s.exchange.toUpperCase()} · every ${s.intervalMinutes} min`;
+  const halt = AP.haltReason || (AP.adaptive?.pausedUntil ? `Paused after ${AP.adaptive.lossStreak} losses in a row until ${new Date(AP.adaptive.pausedUntil).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}` : '');
+  H$('hm-halt').style.display = halt ? '' : 'none'; H$('hm-halt').textContent = halt ? '⛔ '+halt : '';
+
+  // kpis
+  const set = (id, html, cls) => { const el=H$(id); el.innerHTML=html; el.className='val '+(cls||''); };
+  set('hm-k-today', hMoney(st.today.pnl), hCls(st.today.pnl)); H$('hm-k-today-h').textContent = `${st.today.trades} trade${st.today.trades===1?'':'s'} today`;
+  set('hm-k-all', hMoney(st.allTime.pnl), hCls(st.allTime.pnl));
+  set('hm-k-win', st.allTime.trades ? st.allTime.winRate+'%' : '—'); H$('hm-k-win-h').textContent = st.allTime.trades ? `${st.allTime.wins} of ${st.allTime.trades} trades won` : 'no closed trades yet';
+  set('hm-k-open', String(AP.positions.length)); H$('hm-k-open-h').innerHTML = AP.positions.length ? `<span class="${hCls(st.unrealizedPnl)}">${hMoney(st.unrealizedPnl)}</span> right now` : `max ${s.maxOpenPositions}`;
+  if(live){ H$('hm-k-bal-l').textContent='Per trade'; set('hm-k-bal', '$'+s.tradeSizeUSDT); H$('hm-k-bal-h').textContent=`stops after −$${s.dailyLossLimitUSDT} a day`; }
+  else    { H$('hm-k-bal-l').textContent='Practice balance'; set('hm-k-bal', '$'+st.paperCash.toLocaleString(undefined,{maximumFractionDigits:2})); H$('hm-k-bal-h').textContent=`started with $${s.paperBalanceUSDT}`; }
+
+  // market mood
+  const btc = (AP.regimes||{}).BTCUSDT;
+  H$('hm-coins').innerHTML = (s.symbols||[]).map(sym=>{
+    const r = (AP.regimes||{})[sym], tr = homeTrend(r);
+    const vol = !r ? '' : r.volatility==='high' ? 'Wild swings' : r.volatility==='low' ? 'Calm' : 'Normal moves';
+    let can = 'Can buy if the AI is confident';
+    if(!r) can = 'First check pending';
+    else if(r.trend==='downtrend' && s.blockBuysInDowntrend) can = '🚫 Won’t buy while falling';
+    else if(sym!=='BTCUSDT' && btc?.trend==='downtrend' && s.blockAltsWhenBtcDown && s.btcFilter) can = '🚫 Waiting — Bitcoin is falling';
+    else if(r.volatility==='high') can = '⚠ Can buy, smaller size';
+    return `<div class="h-coin"><div class="nm">${hEsc(hCoin(sym))}<span class="h-badge ${tr.c}">${tr.i} ${tr.t}</span></div>
+      <div class="vo" style="margin-top:6px">${hEsc(vol)}</div><div class="can">${can}</div></div>`;
+  }).join('') || '<div class="h-empty">No coins selected — add some in Settings</div>';
+
+  // open trades
+  H$('hm-trades').innerHTML = AP.positions.length ? AP.positions.map(p=>{
+    const now = p.last || p.entry, pl = p.qty*now - p.sizeUSDT;
+    const pct = Math.max(0, Math.min(100, (now - p.sl)/((p.tp - p.sl)||1)*100));
+    return `<div class="h-trade"><div class="top">
+        <div><b style="font-size:16px">${hEsc(hCoin(p.symbol))}</b> <span class="h-badge ${p.mode==='live'?'b-live':'b-paper'}">${p.mode==='live'?'Real':'Practice'}</span>
+          <div class="h-sub">$${Number(p.sizeUSDT).toFixed(2)} bought at ${hPrice(p.entry)} · ${hAgo(p.openedAt)}</div></div>
+        <div style="text-align:right"><div class="pl ${hCls(pl)}">${hMoney(pl)}</div><div class="h-sub">now ${hPrice(now)}</div></div></div>
+      <div class="h-range"><i style="left:${pct}%"></i></div>
+      <div class="h-range-lbl"><span>🛑 Stop ${hPrice(p.sl)}${p.hardSl!=null && p.sl>p.hardSl?' (raised)':''}</span><span>🎯 Target ${hPrice(p.tp)}</span></div>
+      <div style="margin-top:10px;text-align:right"><button class="h-btn danger" onclick="homeClose('${hEsc(p.id)}')">Close now</button></div></div>`;
+  }).join('') : '<div class="h-empty">No open trades. The bot buys only when the market and the AI agree.</div>';
+
+  // feed
+  H$('hm-feed').innerHTML = AP.decisions.length ? AP.decisions.slice(0,30).map(d=>{
+    const a = d.action, ic = a==='BUY'?['ic-buy','↑']:a==='SELL'?['ic-sell','↓']:a==='ERROR'?['ic-err','!']:['ic-wait','…'];
+    const label = a==='BUY'?'Buy signal':a==='SELL'?'Sell signal':a==='ERROR'?'Problem':'Wait';
+    const conf = d.confidence!=null && a!=='ERROR' ? `<span class="tm">${hEsc(d.confidence)}% sure <span class="h-meter"><i style="width:${Math.max(0,Math.min(100,+d.confidence||0))}%"></i></span></span>` : '';
+    return `<div class="h-item"><div class="h-ic ${ic[0]}">${ic[1]}</div><div>
+      <div class="t1">${hEsc(hCoin(d.symbol))} · ${label} ${conf}<span class="tm" style="margin-left:auto">${hAgo(d.at)}</span></div>
+      <div class="t2">${hEsc(homeOutcome(d.outcome, d))}</div>
+      ${d.reason ? `<div class="t3">“${hEsc(d.reason)}”</div>` : ''}</div></div>`;
+  }).join('') : '<div class="h-empty">The AI checks every few minutes. Its first thoughts will appear here — press 🔍 Check now to see them right away.</div>';
+
+  // history
+  const why = { TP:'🎯 Hit target', SL:'🛑 Stop-loss', TRAIL:'🔒 Profit-lock stop', AI:'🤖 AI sold', MANUAL:'✋ You closed', KILL:'⛔ Emergency stop', TIME:'⌛ Too slow, closed' };
+  H$('hm-hist').innerHTML = AP.closed.length ? `<table class="h-hist">${AP.closed.slice(0,15).map(c=>`<tr>
+      <td><b>${hEsc(hCoin(c.symbol))}</b><div class="h-sub">${hAgo(c.closedAt)}</div></td>
+      <td>${hEsc(why[c.why]||c.why)}<div class="h-sub">${hPrice(c.entry)} → ${hPrice(c.exit)}</div></td>
+      <td style="text-align:right" class="${hCls(c.pnl)}"><b>${hMoney(c.pnl)}</b><div class="h-sub">${c.mode==='live'?'real':'practice'}</div></td></tr>`).join('')}</table>`
+    : '<div class="h-empty">No closed trades yet.</div>';
+}
+
+// ── actions ──
+async function homeAct(fn, okMsg){ try { await fn(); if(okMsg) homeToast(okMsg); } catch(e){ homeToast('⚠ '+e.message); } await homeRefresh(); }
+function homeStartStop(){ const on = !AP.settings.enabled;
+  homeAct(()=>apSend({ enabled:on }), on ? `Started — ${AP.settings.mode==='live'?'REAL money':'practice mode'}` : 'Stopped. Open trades keep their stop-loss and target.'); }
+function homeSetMode(m){ if(AP.settings.mode===m) return; homeAct(async()=>{ if(!(await apSend({ mode:m }))) throw new Error('Cancelled — still in '+(AP.settings.mode==='live'?'real money':'practice')+' mode'); }, m==='live' ? 'Switched to REAL money' : 'Switched to practice mode'); }
+function homeRunNow(){ homeToast('Asking the AI about every coin…'); homeAct(()=>apCall('/autopilot/run-now'), 'Done — see “What the AI is thinking”'); }
+function homeClose(id){ if(!confirm('Sell this position now at the market price?')) return; homeAct(()=>apCall('/autopilot/close',{ id }), 'Trade closed'); }
+function homeKill(){
+  if(!confirm('⛔ EMERGENCY STOP\n\nThe bot will stop immediately.\n\nPress OK, then you will be asked whether to also sell everything it holds.')) return;
+  const closeAll = confirm('Also SELL every position the bot holds, at market price?\n\nOK = stop and sell all · Cancel = only stop');
+  homeAct(()=>apCall('/autopilot/kill',{ closeAll }), closeAll ? 'Stopped and sold everything' : 'Bot stopped');
+}
+
+// ── settings sheet ──
+const HOME_PRESETS = {
+  careful:    { minConfidence:75, minRiskReward:2,   maxOpenPositions:2, blockBuysInDowntrend:true,  highVolSizeMult:0.5,  lossStreakPause:3 },
+  balanced:   { minConfidence:65, minRiskReward:1.5, maxOpenPositions:3, blockBuysInDowntrend:true,  highVolSizeMult:0.5,  lossStreakPause:4 },
+  aggressive: { minConfidence:55, minRiskReward:1.3, maxOpenPositions:5, blockBuysInDowntrend:false, highVolSizeMult:0.75, lossStreakPause:5 },
+};
+const HOME_PRESET_NOTE = {
+  careful:'Buys only when the AI is 75%+ sure and the profit is at least 2× the risk. Never in falling markets.',
+  balanced:'Buys when the AI is 65%+ sure and the profit is at least 1.5× the risk. Never in falling markets.',
+  aggressive:'Buys at 55%+ confidence, even in falling markets (with a higher bar). More trades — and more losses.',
+  custom:'Your settings don’t match a preset. Pick one to reset, or fine-tune in “All settings”.',
+};
+let homePreset = null;
+function homeDetectPreset(s){ return Object.keys(HOME_PRESETS).find(k => Object.entries(HOME_PRESETS[k]).every(([f,v]) => s[f]===v)) || 'custom'; }
+function homePickPreset(p){ homePreset=p; document.querySelectorAll('#hm-presets .h-preset').forEach(b=>b.classList.toggle('on', b.dataset.p===p)); H$('hm-preset-note').textContent = HOME_PRESET_NOTE[p]; }
+document.querySelectorAll('#hm-presets .h-preset').forEach(b => b.addEventListener('click', ()=>homePickPreset(b.dataset.p)));
+function homeOpenSettings(){
+  if(!AP){ homeToast('Connect to your bot first'); return; }
+  const s = AP.settings;
+  homePickPreset(homeDetectPreset(s));
+  H$('hm-coins-in').value = (s.symbols||[]).map(hCoin).join(', ');
+  H$('hm-size').value = s.tradeSizeUSDT; H$('hm-loss').value = s.dailyLossLimitUSDT;
+  const ev = H$('hm-every'); if(![...ev.options].some(o=>+o.value===s.intervalMinutes)) ev.add(new Option(`${s.intervalMinutes} minutes`, s.intervalMinutes)); ev.value = s.intervalMinutes;
+  H$('hm-sheet').classList.add('open');
+}
+function homeCloseSettings(){ H$('hm-sheet').classList.remove('open'); }
+function homeSaveSettings(){
+  const out = { symbols:H$('hm-coins-in').value, tradeSizeUSDT:H$('hm-size').value, dailyLossLimitUSDT:H$('hm-loss').value, intervalMinutes:H$('hm-every').value };
+  if(homePreset && HOME_PRESETS[homePreset]) Object.assign(out, HOME_PRESETS[homePreset]);
+  homeAct(async()=>{ await apSend(out); homeCloseSettings(); }, 'Settings saved on your bot');
+}
+
+// ── views ──
+function homeShowPro(){ H$('home').classList.add('hidden'); H$('home-back').style.display='block'; try{ localStorage.setItem('fb_view','pro'); }catch(e){} }
+function homeShowHome(){ H$('home').classList.remove('hidden'); H$('home-back').style.display='none'; try{ localStorage.setItem('fb_view','home'); }catch(e){} homeRefresh(); }
+
+(function homeInit(){
+  let view = 'home'; try { view = localStorage.getItem('fb_view') || 'home'; } catch(e){}
+  if(view === 'pro') homeShowPro(); else homeRefresh();
+  homeTimer = setInterval(()=>{ if(!H$('home').classList.contains('hidden') && !H$('hm-sheet').classList.contains('open')) homeRefresh(); }, 15000);
+})();
+</script>
 
 </body>
 </html>
