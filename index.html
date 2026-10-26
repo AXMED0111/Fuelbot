@@ -4455,7 +4455,11 @@ async function apRefresh(fillForm){
     AP = await apCall('/autopilot/status');
     if(fillForm) apFill(AP.settings);
     apRender();
-  } catch(e){ apEl('ap-state-lbl').textContent = '⚠ Autopilot unreachable'; apMsg(e.message, 'var(--red)'); }
+  } catch(e){
+    apEl('ap-state-lbl').textContent = '⚠ Autopilot unreachable';
+    apEl('ap-state-sub').textContent = /401|Unauthorized/.test(e.message) ? 'Wrong Bot Secret — paste the BOT_SECRET from Railway into ⚙ Settings' : e.message;
+    apMsg(e.message, 'var(--red)');
+  }
 }
 
 function apFill(s){
@@ -4519,6 +4523,7 @@ function apCollect(){
 }
 
 async function apSend(settings){
+  if(!AP) throw new Error('Not connected to the autopilot yet — enter the Bot Secret in ⚙ Settings, save, then reopen 🤖');
   const goingLive = settings.mode === 'live' && AP && AP.settings.mode !== 'live';
   if(goingLive && !confirm(`⚠ Switch the AI Autopilot to LIVE?\n\nThe AI will place REAL orders on ${(settings.exchange||AP.settings.exchange).toUpperCase()} with up to $${settings.tradeSizeUSDT ?? AP.settings.tradeSizeUSDT} per trade, without asking you.\n\nPress OK only if you accept losing that money.`)){
     apEl('ap-mode').value = AP.settings.mode; return false;
