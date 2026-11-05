@@ -1437,7 +1437,7 @@ setTimeout(() => {
 
       <div class="ap-sec">Strategy</div>
       <div class="ap-grid">
-        <div class="form-row"><label>Who decides trades</label><select id="ap-strategy"><option value="ai">🤖 AI bot (DeepSeek)</option><option value="classic">📏 Classic rules (original strategy)</option></select></div>
+        <div class="form-row"><label>Who decides trades</label><select id="ap-strategy"><option value="ai">🤖 AI bot (DeepSeek)</option><option value="both">🤖+📏 Both (AI and Classic, shared limits)</option><option value="classic">📏 Classic rules (original strategy)</option></select></div>
       </div>
       <div class="ap-sec">Classic rules</div>
       <div class="ap-grid">
@@ -6529,6 +6529,17 @@ function toggleStargatePanel() {
 #home .h-status.running .big .pulse{background:var(--h-green);animation:hpulse 1.8s infinite}
 @keyframes hpulse{0%{box-shadow:0 0 0 0 rgba(47,210,126,.55)}70%{box-shadow:0 0 0 14px rgba(47,210,126,0)}100%{box-shadow:0 0 0 0 rgba(47,210,126,0)}}
 #home .h-status .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+#home .h-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 16px;padding:4px;background:var(--h-card2);border:1px solid var(--h-line);border-radius:14px;width:fit-content;max-width:100%}
+#home .h-tabs button{appearance:none;border:0;background:transparent;color:var(--h-dim);font:inherit;font-weight:600;font-size:14px;padding:9px 14px;border-radius:10px;cursor:pointer;display:inline-flex;gap:7px;align-items:center}
+#home .h-tabs button.on{background:var(--h-card);color:var(--h-text);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+#home .h-tbl{width:100%;border-collapse:collapse;font-size:13px}
+#home .h-tbl th{color:var(--h-dim);font-weight:600;text-align:right;padding:7px 8px;border-bottom:1px solid var(--h-line);white-space:nowrap}
+#home .h-tbl td{text-align:right;padding:8px;border-bottom:1px solid var(--h-line)}
+#home .h-tbl th:first-child,#home .h-tbl td:first-child{text-align:left}
+#home .h-tbl tr.best td{font-weight:800}
+#home .h-warn{display:flex;gap:6px;align-items:flex-start;color:var(--h-amber);font-size:13px;margin-top:6px}
+#home .h-addr{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--h-dim);word-break:break-all}
+#home .h-scroll{overflow-x:auto}
 #home .h-seg{display:inline-flex;background:var(--h-card2);border:1px solid var(--h-line);border-radius:12px;padding:3px}
 #home .h-seg button{appearance:none;border:0;background:transparent;color:var(--h-dim);font:inherit;font-weight:600;font-size:13.5px;
   padding:7px 14px;border-radius:9px;cursor:pointer}
@@ -6659,6 +6670,13 @@ function toggleStargatePanel() {
 
     <!-- Main -->
     <div id="hm-main" style="display:none">
+      <div class="h-tabs" role="tablist">
+        <button id="hm-tab-overview" class="on" onclick="homeTab('overview')"><svg class="fi"><use href="#i-house"/></svg>Overview</button>
+        <button id="hm-tab-copy" onclick="homeTab('copy')"><svg class="fi"><use href="#i-eye"/></svg>Copy radar</button>
+        <button id="hm-tab-arb" onclick="homeTab('arb')"><svg class="fi"><use href="#i-arrow-left-right"/></svg>Arbitrage radar</button>
+        <button id="hm-tab-reports" onclick="homeTab('reports')"><svg class="fi"><use href="#i-file-down"/></svg>Reports</button>
+      </div>
+      <div id="hm-pane-overview">
       <div class="h-hero">
         <div class="h-card h-status" id="hm-status">
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
@@ -6672,6 +6690,7 @@ function toggleStargatePanel() {
             <div class="h-seg" role="group" aria-label="Strategy">
               <button id="hm-s-ai" onclick="homeSetStrategy('ai')" title="DeepSeek AI decides, with adaptive safety rules">🤖 AI bot</button>
               <button id="hm-s-classic" onclick="homeSetStrategy('classic')" title="The dashboard's original rule strategy, now on the server 24/7">📏 Classic rules</button>
+              <button id="hm-s-both" onclick="homeSetStrategy('both')" title="AI and Classic both trade, sharing the same limits">🤖+📏 Both</button>
             </div>
           </div>
           <div class="row">
@@ -6786,6 +6805,69 @@ function toggleStargatePanel() {
         </div>
         <div class="h-sub" id="hm-ins-ai" style="margin-top:12px"></div>
       </div>
+      </div>
+
+      <!-- COPY-TRADING RADAR -->
+      <div id="hm-pane-copy" style="display:none">
+        <div class="h-cols">
+          <div class="h-card">
+            <div class="h-head"><div><h3><svg class="fi"><use href="#i-eye"/></svg> Copy-trading radar · Solana</h3>
+              <p class="h-sub">Watch-only. Follow wallets you think trade well: you get a Telegram message when they buy or sell, and a $<span id="hm-cp-size">10</span> practice copy shows whether copying them would really have paid — bought at the price <i>we</i> could get, a little late, with swap costs.</p></div></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+              <input id="hm-cp-addr" placeholder="Solana wallet address" autocomplete="off" spellcheck="false" style="flex:2;min-width:220px;font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--h-line);background:var(--h-card2);color:var(--h-text)"/>
+              <input id="hm-cp-label" placeholder="Name (optional)" style="flex:1;min-width:120px;font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--h-line);background:var(--h-card2);color:var(--h-text)"/>
+              <button class="h-btn primary" onclick="homeCpFollow()"><svg class="fi"><use href="#i-plus"/></svg> Follow</button>
+            </div>
+            <p class="h-sub" id="hm-cp-rpc" style="margin-top:10px"></p>
+            <p class="h-sub" style="margin-top:6px">From Telegram: <b>/follow &lt;address&gt; [name]</b>, <b>/unfollow</b>, <b>/following</b>.</p>
+          </div>
+          <div class="h-card">
+            <div class="h-head"><div><h3><svg class="fi"><use href="#i-coins"/></svg> Practice results</h3><p class="h-sub">If you had copied every trade of the wallets you follow</p></div></div>
+            <div id="hm-cp-kpis" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px"></div>
+            <div class="h-sub" style="margin-top:12px">How to find good wallets: on <a href="https://birdeye.so/leaderboard" target="_blank" rel="noopener" style="color:var(--h-blue)">Birdeye</a>, <a href="https://gmgn.ai" target="_blank" rel="noopener" style="color:var(--h-blue)">GMGN</a> or <a href="https://dexscreener.com/solana" target="_blank" rel="noopener" style="color:var(--h-blue)">DexScreener</a> “top traders” of a coin. Follow a few for 1–2 weeks here before trusting any of them: the practice copies show who is worth copying after delays and fees.</div>
+          </div>
+        </div>
+        <div class="h-card" style="margin-bottom:16px">
+          <div class="h-head"><div><h3><svg class="fi"><use href="#i-wallet"/></svg> Followed wallets</h3><p class="h-sub">Score of each wallet from its practice copies</p></div></div>
+          <div class="h-scroll" id="hm-cp-wallets"></div>
+        </div>
+        <div class="h-cols">
+          <div class="h-card"><div class="h-head"><div><h3><svg class="fi"><use href="#i-activity"/></svg> Their latest trades</h3><p class="h-sub">Newest first</p></div></div><div class="h-feed" id="hm-cp-swaps"></div></div>
+          <div class="h-card"><div class="h-head"><div><h3><svg class="fi"><use href="#i-coins"/></svg> Practice copies</h3><p class="h-sub">Opened when they buy, closed when they sell, on a stop-loss or after 14 days</p></div></div><div id="hm-cp-copies"></div></div>
+        </div>
+      </div>
+
+      <!-- ARBITRAGE + FUNDING RADAR -->
+      <div id="hm-pane-arb" style="display:none">
+        <div class="h-card" style="margin-bottom:16px">
+          <div class="h-head"><div><h3><svg class="fi"><use href="#i-arrow-left-right"/></svg> Arbitrage radar</h3>
+            <p class="h-sub" id="hm-arb-sub">Watch-only. Coins that are cheaper on one exchange than on another — with every fee counted: buy fee, withdrawal fee, sell fee and order-book slippage.</p></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <div class="h-seg"><button id="hm-arb-m-transfer" class="on" onclick="homeArbMode('transfer')">Transfer coins</button><button id="hm-arb-m-prefunded" onclick="homeArbMode('prefunded')">Money on both exchanges</button></div>
+              <button class="h-btn" onclick="homeArbScan()"><svg class="fi"><use href="#i-refresh-cw"/></svg> Scan now</button>
+            </div></div>
+          <div id="hm-arb-exch" style="display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 12px"></div>
+          <div id="hm-arb-best"></div>
+          <p class="h-sub" style="margin-top:10px"><b>Transfer coins</b>: buy on the cheap exchange, withdraw the coins to the other, sell there — the withdrawal fee is fixed, so small amounts lose most of the gap, and the price can move while coins travel. <b>Money on both exchanges</b>: keep USDT on one and coins on the other, buy and sell at the same moment, move funds back later (the withdrawal fee is counted once per trade as a worst case).</p>
+        </div>
+        <div id="hm-arb-list"></div>
+        <div class="h-card" style="margin-bottom:16px">
+          <div class="h-head"><div><h3><svg class="fi"><use href="#i-percent"/></svg> Funding radar</h3>
+            <p class="h-sub">Futures pay a funding fee every few hours. When it is high and positive, buying the coin and shorting the same amount of futures (cash-and-carry) collects it with no price risk.</p></div></div>
+          <div class="h-scroll" id="hm-arb-funding"></div>
+        </div>
+      </div>
+
+      <!-- REPORTS -->
+      <div id="hm-pane-reports" style="display:none">
+        <div class="h-card" style="margin-bottom:16px">
+          <div class="h-head"><div><h3><svg class="fi"><use href="#i-file-down"/></svg> PDF reports</h3><p class="h-sub">Download a report, or send it to your Telegram chat. Also from Telegram: <b>/report signals 30</b></p></div>
+            <div class="h-seg" id="hm-rp-days"><button data-d="1">1 day</button><button data-d="7" class="on">7 days</button><button data-d="30">30 days</button><button data-d="90">90 days</button></div></div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-top:6px" id="hm-rp-list"></div>
+          <p class="h-sub" style="margin-top:14px">CSV files of every trade and decision: <a href="#" style="color:var(--h-blue)" onclick="homeDownload('trades');return false">trades</a> · <a href="#" style="color:var(--h-blue)" onclick="homeDownload('decisions');return false">AI decisions</a></p>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -6796,11 +6878,12 @@ function toggleStargatePanel() {
         <button class="h-btn ghost" onclick="homeCloseSettings()">✕</button></div>
 
       <div class="h-field"><label>Strategy</label>
-        <div class="h-presets" style="grid-template-columns:1fr 1fr">
+        <div class="h-presets" style="grid-template-columns:1fr 1fr 1fr">
           <button class="h-preset" id="hm-st-ai" onclick="homePickStrategy('ai')"><b>🤖 AI bot</b><span>DeepSeek decides · every 15 min</span></button>
           <button class="h-preset" id="hm-st-classic" onclick="homePickStrategy('classic')"><b>📏 Classic rules</b><span>Original strategy · every minute in its sessions</span></button>
+          <button class="h-preset" id="hm-st-both" onclick="homePickStrategy('both')"><b>🤖+📏 Both</b><span>Both trade · shared limits</span></button>
         </div>
-        <p class="h-sub">Only one trades at a time, on the same account, 24/7 on the server — no need to keep this page open.</p></div>
+        <p class="h-sub">24/7 on the server — no need to keep this page open. With Both, the two strategies share the same limits (open trades, trades per day, daily loss) and never buy the same coin twice.</p></div>
       <div class="h-field"><label>Trading style <span class="h-sub" style="font-weight:400">(AI bot)</span></label>
         <div class="h-presets" id="hm-presets">
           <button class="h-preset" data-p="careful"><b>🛡 Careful</b><span>Fewer, surer trades</span></button>
@@ -6899,6 +6982,7 @@ async function homeRefresh(){
     try { homePerf = await apCall('/autopilot/performance', { mode: homePerfModeSel || AP.settings.mode }); homeRenderPerf(); } catch(e){ /* older server */ }
     if(!homeFeedDate) homeLoadFeed();
     homeLoadSlow(false);
+    if(typeof homeTabSel !== 'undefined' && homeTabSel === 'copy') homeLoadCopy();
   } catch(e){
     if(/Unauthorized|401|Bot Secret/.test(e.message)) homeShowConnect('Wrong key — try again.');
     else if(/Too many/.test(e.message)) homeShowConnect('Too many wrong tries — wait 10 minutes.');
@@ -6948,10 +7032,10 @@ function homeRender(){
   const sb = H$('hm-start'); sb.textContent = on ? '⏸ Stop' : '▶ Start'; sb.classList.toggle('primary', !on);
   H$('hm-mode-badge').className = 'h-badge ' + (live?'b-live':'b-paper');
   H$('hm-mode-badge').textContent = live ? 'Real money' : 'Practice money';
-  const cl = s.strategy === 'classic';
-  H$('hm-ai-badge').textContent = cl ? '📏 Classic rules' : `🤖 AI · ${s.aiProvider==='deepseek'?'DeepSeek':s.aiProvider==='anthropic'?'Claude':'OpenAI'}`;
-  H$('hm-s-ai').className = cl ? '' : 'on'; H$('hm-s-classic').className = cl ? 'on' : '';
-  H$('hm-how-ai').style.display = cl ? 'none' : ''; H$('hm-how-classic').style.display = cl ? '' : 'none';
+  const cl = s.strategy === 'classic', both = s.strategy === 'both', aiName = s.aiProvider==='deepseek'?'DeepSeek':s.aiProvider==='anthropic'?'Claude':'OpenAI';
+  H$('hm-ai-badge').textContent = cl ? '📏 Classic rules' : both ? `🤖+📏 Both · ${aiName} + Classic` : `🤖 AI · ${aiName}`;
+  for(const k of ['ai','classic','both']) H$('hm-s-' + k).className = (s.strategy || 'ai') === k ? 'on' : '';
+  H$('hm-how-ai').style.display = cl ? 'none' : ''; H$('hm-how-classic').style.display = cl || both ? '' : 'none';
   H$('hm-feed-title').textContent = cl ? 'What the strategy is doing' : 'What the AI is thinking';
   H$('hm-how-sub').textContent = cl ? 'Every minute, for each coin:' : 'Every few minutes, for each coin:';
   H$('hm-m-paper').className = live ? '' : 'on';
@@ -7033,7 +7117,7 @@ function homeRender(){
 
   // feed (day view is loaded separately; this is only the very first paint)
   if(!homeFeedLoaded) H$('hm-feed').innerHTML = AP.decisions.length ? AP.decisions.slice(0,30).map(d=>{
-    const a = d.action, ic = a==='BUY'?['ic-buy','↑']:a==='SELL'?['ic-sell','↓']:a==='ERROR'?['ic-err','!']:['ic-wait','…'];
+    const a = d.action, ic = a==='BUY'?['ic-buy',hIc('arrow-up')]:a==='SELL'?['ic-sell',hIc('arrow-down')]:a==='ERROR'?['ic-err',hIc('triangle-alert')]:['ic-wait',hIc('clock')];
     const label = a==='BUY'?'Buy signal':a==='SELL'?'Sell signal':a==='ERROR'?'Problem':'Wait';
     const conf = d.confidence!=null && a!=='ERROR' ? `<span class="tm">${d.setup==='classic' ? 'score '+(d.confidence/10).toFixed(1)+'/10' : hEsc(d.confidence)+'% sure'} <span class="h-meter"><i style="width:${Math.max(0,Math.min(100,+d.confidence||0))}%"></i></span></span>` : '';
     return `<div class="h-item"><div class="h-ic ${ic[0]}">${ic[1]}</div><div>
@@ -7132,7 +7216,7 @@ function homeSignalBadge(sg){
   return `<span class="h-badge ${b[0]}" style="text-transform:none;font-size:12px">${b[1]}</span>`;
 }
 function homeDecisionItem(d){
-  const a = d.action, ic = a==='BUY'?['ic-buy','↑']:a==='SELL'?['ic-sell','↓']:a==='ERROR'?['ic-err','!']:['ic-wait','…'];
+  const a = d.action, ic = a==='BUY'?['ic-buy',hIc('arrow-up')]:a==='SELL'?['ic-sell',hIc('arrow-down')]:a==='ERROR'?['ic-err',hIc('triangle-alert')]:['ic-wait',hIc('clock')];
   const label = a==='BUY'?'Buy signal':a==='SELL'?'Sell signal':a==='ERROR'?'Problem':'Wait';
   const conf = d.confidence!=null && a!=='ERROR' ? `<span class="tm">${d.setup==='classic' ? 'score '+(d.confidence/10).toFixed(1)+'/10' : hEsc(d.confidence)+'% sure'} <span class="h-meter"><i style="width:${Math.max(0,Math.min(100,+d.confidence||0))}%"></i></span></span>` : '';
   const time = new Date(d.at).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
@@ -7193,13 +7277,14 @@ function homeStartStop(){ const on = !AP.settings.enabled;
 function homeSetMode(m){ if(AP.settings.mode===m) return; homeAct(async()=>{ if(!(await apSend({ mode:m }))) throw new Error('Cancelled — still in '+(AP.settings.mode==='live'?'real money':'practice')+' mode'); }, m==='live' ? 'Switched to REAL money' : 'Switched to practice mode'); }
 function homeSetStrategy(st){
   if(AP.settings.strategy===st) return;
-  const msg = st==='classic' ? 'Switch to 📏 Classic rules?\n\nThe AI stops deciding; the original rule strategy trades instead (in its sessions, checked every minute), 24/7 on the server.'
-                             : 'Switch to 🤖 AI bot?\n\nDeepSeek decides again; the Classic rules stop.';
+  const msg = st==='classic' ? 'Switch to Classic rules?\n\nThe AI stops deciding; the original rule strategy trades instead (in its sessions, checked every minute), 24/7 on the server.'
+            : st==='both' ? 'Let BOTH strategies trade?\n\nThe AI and the Classic rules both look for trades, 24/7 on the server. They share the same limits (open trades, trades per day, daily loss) and never buy the same coin twice.'
+            : 'Switch to the AI bot?\n\nDeepSeek decides again; the Classic rules stop.';
   if(!confirm(msg)) return;
-  homeAct(()=>apSend({ strategy: st }), st==='classic' ? 'Classic rules are now trading' : 'AI bot is now trading');
+  homeAct(()=>apSend({ strategy: st }), { classic:'Classic rules are now trading', both:'Both strategies are now trading', ai:'AI bot is now trading' }[st]);
 }
 let homeStratPick = null;
-function homePickStrategy(st){ homeStratPick = st; H$('hm-st-ai').classList.toggle('on', st==='ai'); H$('hm-st-classic').classList.toggle('on', st==='classic'); }
+function homePickStrategy(st){ homeStratPick = st; for(const k of ['ai','classic','both']) H$('hm-st-' + k).classList.toggle('on', st===k); }
 function homeRunNow(){ homeToast('Asking the AI about every coin…'); homeAct(()=>apCall('/autopilot/run-now'), 'Done — see “What the AI is thinking”'); }
 function homeClose(id){ if(!confirm('Sell this position now at the market price?')) return; homeAct(()=>apCall('/autopilot/close',{ id }), 'Trade closed'); }
 function homeKill(){
@@ -7254,7 +7339,7 @@ async function proApUpdate(){
   try {
     AP = await apCall('/autopilot/status');
     const s = AP.settings, tg = AP.telegram;
-    st.textContent = `${s.enabled ? 'RUNNING' : 'STOPPED'} · ${s.strategy==='classic' ? 'CLASSIC' : 'AI'} · ${s.mode==='live' ? 'REAL MONEY' : 'PRACTICE'} · ${s.exchange.toUpperCase()} · 📱 ${tg && tg.linked ? 'alerts on' : 'alerts off'}`;
+    st.textContent = `${s.enabled ? 'RUNNING' : 'STOPPED'} · ${s.strategy==='classic' ? 'CLASSIC' : s.strategy==='both' ? 'AI+CLASSIC' : 'AI'} · ${s.mode==='live' ? 'REAL MONEY' : 'PRACTICE'} · ${s.exchange.toUpperCase()} · 📱 ${tg && tg.linked ? 'alerts on' : 'alerts off'}`;
     st.style.color = s.enabled ? 'var(--green)' : 'var(--muted2)';
     dot.className = s.enabled ? 'ex-chip-dot' : 'ex-chip-dot idle';
   } catch(e){ st.textContent = 'unreachable'; st.style.color='var(--red)'; dot.className='ex-chip-dot error'; }
@@ -7262,6 +7347,127 @@ async function proApUpdate(){
 setInterval(proApUpdate, 30000);
 
 // ── views ──
+// ── tabs: Overview / Copy radar / Arbitrage radar / Reports ──
+let homeTabSel = 'overview';
+const hIc = n => `<svg class="fi"><use href="#i-${n}"/></svg>`;
+const hUsd = v => { const n = +v || 0; return n >= 1e6 ? '$' + (n/1e6).toFixed(1) + 'M' : n >= 1e4 ? '$' + (n/1e3).toFixed(0) + 'K' : '$' + n.toFixed(2); };
+const hShort = a => String(a).slice(0,4) + '…' + String(a).slice(-4);
+const hBox = (l, v, h, c) => `<div style="background:var(--h-card2);border:1px solid var(--h-line);border-radius:12px;padding:10px 12px"><div class="h-sub" style="font-size:12px;font-weight:600">${l}</div><div style="font-size:20px;font-weight:800" class="${c||''}">${v}</div>${h ? `<div class="h-sub" style="font-size:12px">${h}</div>` : ''}</div>`;
+function homeTab(t){
+  homeTabSel = t;
+  for(const k of ['overview','copy','arb','reports']){ H$('hm-pane-' + k).style.display = k === t ? '' : 'none'; H$('hm-tab-' + k).classList.toggle('on', k === t); }
+  if(t === 'copy') homeLoadCopy();
+  if(t === 'arb') homeLoadArb();
+  if(t === 'reports') homeRenderReports();
+}
+
+// ── copy-trading radar ──
+let homeCP = null;
+async function homeLoadCopy(){
+  try { homeCP = await apCall('/copy/state'); homeRenderCopy(); }
+  catch(e){ H$('hm-cp-wallets').innerHTML = `<div class="h-sub">${/404|Cannot POST/.test(e.message) ? 'Your server is still updating — try again in a minute.' : hEsc(e.message)}</div>`; }
+}
+function homeRenderCopy(){
+  const c = homeCP; H$('hm-cp-size').textContent = c.settings.paperCopyUSDT;
+  H$('hm-cp-rpc').innerHTML = `${hIc('info')} Solana data from ${c.rpc === 'public' ? 'the free public server (can be slow — add <b>HELIUS_API_KEY</b> in Railway for a faster one)' : hEsc(c.rpc)} · every wallet checked every ${c.settings.pollSeconds} s · alerts ${c.settings.notify ? 'on' : 'off'}`;
+  const pnl = c.closed.reduce((a,x) => a + x.pnl, 0), wins = c.closed.filter(x => x.pnl > 0).length;
+  const unreal = c.open.reduce((a,x) => a + (x.last ? x.qty*x.last*(1 - c.settings.dexFeePct/100) - x.size : 0), 0);
+  H$('hm-cp-kpis').innerHTML = hBox('Wallets followed', c.wallets.length, `${c.swaps.filter(x => !x.historical).length} trades seen`)
+    + hBox('Practice P&L', hMoney(pnl), `${c.closed.length} closed${c.closed.length ? ' · ' + Math.round(wins/c.closed.length*100) + '% won' : ''}`, hCls(pnl))
+    + hBox('Open copies', c.open.length, `${hMoney(unreal)} now`, hCls(unreal))
+    + hBox('Copy size', '$' + c.settings.paperCopyUSDT, `skip if pool &lt; ${hUsd(c.settings.minLiquidityUSD)}`);
+  H$('hm-cp-wallets').innerHTML = c.wallets.length ? `<table class="h-tbl"><tr><th>Wallet</th><th>Trades seen</th><th>24 h</th><th>Copies</th><th>Won</th><th>P&amp;L</th><th>Open</th><th>Avg hold</th><th></th></tr>${c.wallets.map(w => { const st = w.stats;
+      return `<tr><td><b>${hEsc(w.label || hShort(w.address))}</b>${w.paused ? ' <span class="h-badge b-dim">paused</span>' : ''}<div class="h-addr">${hEsc(w.address)}</div>${st.flags.concat(w.error ? [w.error] : []).map(f => `<div class="h-warn">${hIc('triangle-alert')}<span>${hEsc(f)}</span></div>`).join('')}</td>
+        <td>${st.swaps}</td><td>${st.last24h}</td><td>${st.copies}</td><td>${st.winRate != null ? st.winRate + '%' : '—'}</td><td class="${hCls(st.pnl)}"><b>${hMoney(st.pnl)}</b></td><td>${st.openCopies ? st.openCopies + ' · ' + hMoney(st.unrealized) : '—'}</td><td>${st.avgHoldHours != null ? st.avgHoldHours + ' h' : '—'}</td>
+        <td style="white-space:nowrap"><a class="h-btn ghost" style="padding:6px 9px;text-decoration:none" href="https://solscan.io/account/${hEsc(w.address)}" target="_blank" rel="noopener" title="Open on Solscan">${hIc('external-link')}</a>
+          <button class="h-btn ghost" style="padding:6px 9px" onclick="homeCpPause('${hEsc(w.address)}', ${!w.paused})" title="${w.paused ? 'Resume' : 'Pause'}">${hIc(w.paused ? 'play' : 'circle-pause')}</button>
+          <button class="h-btn ghost" style="padding:6px 9px;color:var(--h-red)" onclick="homeCpUnfollow('${hEsc(w.address)}')" title="Stop following">${hIc('trash-2')}</button></td></tr>`; }).join('')}</table>`
+    : '<div class="h-sub" style="padding:10px 0">Not following anyone yet. Paste a Solana wallet address above.</div>';
+  H$('hm-cp-swaps').innerHTML = c.swaps.length ? c.swaps.slice(0, 60).map(x => `<div class="h-item"><div class="h-ic ${x.side === 'BUY' ? 'ic-buy' : 'ic-sell'}">${hIc(x.side === 'BUY' ? 'arrow-up' : 'arrow-down')}</div><div>
+      <div class="t1">${hEsc(x.label || hShort(x.wallet))} ${x.side === 'BUY' ? 'bought' : 'sold'} <b>${hEsc(x.symbol)}</b>${x.valueUsd ? ' · ' + hUsd(x.valueUsd) : ''}<span class="tm">${hAgo(x.at)}</span></div>
+      <div class="h-sub">${x.theirPrice ? 'at ' + hPrice(x.theirPrice) + ' · ' : ''}pool ${hUsd(x.liquidityUsd)} · ${x.onMexc ? 'same ticker on MEXC (check it is the same token)' : 'not on MEXC'}${x.lagSec > 120 && !x.historical ? ' · seen ' + Math.round(x.lagSec/60) + ' min late' : ''}</div>
+      <div class="h-sub">${x.historical ? 'before you followed' : hEsc(x.copy || '')}${x.url ? ` · <a href="${hEsc(x.url)}" target="_blank" rel="noopener" style="color:var(--h-blue)">chart</a>` : ''}</div></div></div>`).join('')
+    : '<div class="h-sub">No trades seen yet.</div>';
+  const rows = c.open.map(x => { const pl = x.last ? x.qty*x.last*(1 - c.settings.dexFeePct/100) - x.size : 0;
+      return `<tr><td><b>${hEsc(x.symbol)}</b><div class="h-sub">${hEsc(x.label || hShort(x.wallet))}</div></td><td><span class="h-badge b-side">open</span></td><td>${hPrice(x.entry)}</td><td>${hPrice(x.last)}</td><td class="${hCls(pl)}"><b>${hMoney(pl)}</b></td><td>${hAgo(x.openedAt)}</td></tr>`; })
+    .concat(c.closed.slice(0, 40).map(x => `<tr><td><b>${hEsc(x.symbol)}</b><div class="h-sub">${hEsc(x.label || hShort(x.wallet))}</div></td><td>${hEsc(x.why)}</td><td>${hPrice(x.entry)}</td><td>${hPrice(x.exit)}</td><td class="${hCls(x.pnl)}"><b>${hMoney(x.pnl)}</b><div class="h-sub">${x.pnlPct >= 0 ? '+' : ''}${x.pnlPct}%</div></td><td>${hAgo(x.closedAt)}</td></tr>`));
+  H$('hm-cp-copies').innerHTML = rows.length ? `<div class="h-scroll"><table class="h-tbl"><tr><th>Token</th><th>Status</th><th>Entry</th><th>Exit / now</th><th>P&amp;L</th><th>When</th></tr>${rows.join('')}</table></div>` : '<div class="h-sub">No practice copies yet.</div>';
+}
+async function homeCpFollow(){
+  const address = H$('hm-cp-addr').value.trim(), label = H$('hm-cp-label').value.trim();
+  if(!address){ homeToast('Paste a Solana wallet address first'); return; }
+  try { homeCP = await apCall('/copy/follow', { address, label }); H$('hm-cp-addr').value = ''; H$('hm-cp-label').value = ''; homeRenderCopy(); homeToast('Following — you will get a Telegram message when it trades'); }
+  catch(e){ homeToast(e.message); }
+}
+async function homeCpUnfollow(a){ if(!confirm('Stop following this wallet?')) return; try { homeCP = await apCall('/copy/unfollow', { address:a }); homeRenderCopy(); } catch(e){ homeToast(e.message); } }
+async function homeCpPause(a, p){ try { homeCP = await apCall('/copy/pause', { address:a, paused:p }); homeRenderCopy(); } catch(e){ homeToast(e.message); } }
+
+// ── arbitrage + funding radar ──
+let homeAR = null, homeArbM = 'transfer';
+async function homeLoadArb(){
+  try { homeAR = await apCall('/arb/state'); homeRenderArb(); }
+  catch(e){ H$('hm-arb-list').innerHTML = `<div class="h-card h-sub" style="margin-bottom:16px">${/404|Cannot POST/.test(e.message) ? 'Your server is still updating — try again in a minute.' : hEsc(e.message)}</div>`; }
+}
+async function homeArbScan(){ H$('hm-arb-sub').textContent = 'Scanning every exchange… (up to a minute)'; try { homeAR = await apCall('/arb/scan'); homeRenderArb(); } catch(e){ homeToast(e.message); } }
+function homeArbMode(m){ homeArbM = m; for(const k of ['transfer','prefunded']) H$('hm-arb-m-' + k).classList.toggle('on', k === m); if(homeAR) homeRenderArb(); }
+function homeRenderArb(){
+  const a = homeAR, names = a.exchangeNames;
+  H$('hm-arb-sub').innerHTML = a.scannedAt ? `Watch-only · ${a.candidates} price gaps of ${a.settings.minSpreadPct}% or more between coins trading over ${hUsd(a.settings.minVolumeUSD)} a day · order books read for the biggest ${a.settings.topBooks} · scanned ${hAgo(a.scannedAt)} (every ${a.settings.scanMinutes} min)` : 'The first scan is running…';
+  H$('hm-arb-exch').innerHTML = Object.entries(a.exchanges).map(([k, v]) => `<span class="h-badge ${v.ok ? 'b-up' : 'b-down'}" style="text-transform:none" title="${v.ok ? v.pairs + ' USDT pairs' : hEsc(v.error)}">${hIc(v.ok ? 'check' : 'x')} ${hEsc(names[k])}${v.ok ? ' · ' + v.pairs : ''} · taker ${a.settings.takerFees[k]}%</span>`).join('');
+  const b = a.best;
+  H$('hm-arb-best').innerHTML = b ? `<div style="padding:14px;border-radius:14px;background:rgba(91,140,255,.10);border:1px solid var(--h-line)">
+      <div style="font-weight:800;font-size:16px">${hIc('trophy')} ${b.capital ? 'Best capital to start: $' + b.capital.toLocaleString() : 'No gap pays after fees right now'}</div><div class="h-sub" style="margin-top:4px">${hEsc(b.text)}</div>
+      ${b.rows ? `<div class="h-scroll"><table class="h-tbl" style="margin-top:8px"><tr><th>Capital</th><th>Gaps that still pay</th><th>Best profit</th><th>Average return</th></tr>${b.rows.map(r => `<tr class="${r.capital === b.capital ? 'best' : ''}"><td>$${r.capital.toLocaleString()}</td><td>${r.profitable} of ${r.of}</td><td class="${hCls(r.bestNet)}">${r.profitable ? hMoney(r.bestNet) : '—'}</td><td>${r.profitable ? '+' + r.avgNetPct + '%' : '—'}</td></tr>`).join('')}</table></div>` : ''}</div>` : '';
+  const key = homeArbM === 'transfer' ? 'bestTransfer' : 'bestPrefunded', f2 = v => '$' + (+v).toFixed(2);
+  H$('hm-arb-list').innerHTML = a.opportunities.length ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:16px;margin-bottom:16px">${a.opportunities.slice(0, 20).map(o => { const rows = o[homeArbM], best = rows.find(r => r.capital === o[key]);
+    return `<div class="h-card"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="font-size:18px">${hEsc(o.coin)}</b><span class="h-badge b-up">+${o.spreadPct}%</span><span style="flex:1"></span>${best ? `<b class="${hCls(best.net)}" style="font-size:17px">${hMoney(best.net)}</b><span class="h-sub">with $${best.capital.toLocaleString()}</span>` : '<span class="h-sub">no profit after fees</span>'}</div>
+      <div class="h-sub" style="margin-top:6px">Buy on <a href="${hEsc(o.links.buy)}" target="_blank" rel="noopener" style="color:var(--h-blue)">${hEsc(o.buyName)}</a> at ${hPrice(o.ask)} → sell on <a href="${hEsc(o.links.sell)}" target="_blank" rel="noopener" style="color:var(--h-blue)">${hEsc(o.sellName)}</a> at ${hPrice(o.bid)}</div>
+      <div class="h-sub">Trading fees ${o.feePct}% (buy ${a.settings.takerFees[o.buyEx]}% + sell ${a.settings.takerFees[o.sellEx]}%) · withdrawal ${o.withdraw ? hEsc(+o.withdraw.fee.toPrecision(4) + ' ' + o.coin + ' via ' + o.withdraw.chain) + (o.withdraw.exact ? '' : ' (estimate)') : 'unknown'} · volume ${hUsd(o.volBuy)} / ${hUsd(o.volSell)}</div>
+      ${o.warnings.map(w => `<div class="h-warn">${hIc('triangle-alert')}<span>${hEsc(w)}</span></div>`).join('')}
+      <div class="h-scroll"><table class="h-tbl" style="margin-top:8px"><tr><th>Capital</th><th>Buy fee</th><th>${homeArbM === 'transfer' ? 'Withdrawal' : 'Rebalance'}</th><th>Sell fee</th><th>Slippage</th><th>You keep</th></tr>
+      ${rows.map(r => r.ok ? `<tr class="${r.capital === o[key] ? 'best' : ''}"><td>$${r.capital.toLocaleString()}</td><td>${f2(r.fees.buy)}</td><td>${f2(homeArbM === 'transfer' ? r.fees.withdraw : r.fees.rebalance)}</td><td>${f2(r.fees.sell)}</td><td>${f2(r.fees.slippage)}</td><td class="${hCls(r.net)}">${hMoney(r.net)} <span class="h-sub">(${r.netPct >= 0 ? '+' : ''}${r.netPct}%)</span></td></tr>`
+        : `<tr><td>$${r.capital.toLocaleString()}</td><td colspan="5" class="h-sub" style="text-align:left">${hEsc(r.why)}</td></tr>`).join('')}</table></div></div>`; }).join('')}</div>`
+    : `<div class="h-card h-sub" style="margin-bottom:16px">${a.scannedAt ? 'No price gaps worth showing right now — the radar keeps scanning.' : 'The first scan is running…'}</div>`;
+  const fr = (a.funding || []).filter(r => r.apr > 0).slice(0, 25);
+  H$('hm-arb-funding').innerHTML = fr.length ? `<table class="h-tbl"><tr><th>Coin</th><th>Exchange</th><th>Rate</th><th>Every</th><th>Per year</th><th>Fees in + out</th><th>Fees earned back in</th><th>$1,000: per day</th><th>$1,000: 7 days</th><th>$1,000: 30 days</th><th>Spot on</th></tr>${fr.map(r => { const k = r.capitals.find(c => c.capital === 1000) || r.capitals.at(-1);
+      return `<tr><td><b>${hEsc(r.coin)}</b></td><td>${hEsc(names[r.ex] || r.ex)}</td><td>${(r.rate*100).toFixed(4)}%</td><td>${r.hours} h</td><td class="pos"><b>${r.apr}%</b></td><td>${r.feesPct}% · ${f2(k.fees)}</td><td>${r.breakEvenDays} days</td><td>${f2(k.perDay)}</td><td class="${hCls(k.net7)}">${hMoney(k.net7)}</td><td class="${hCls(k.net30)}">${hMoney(k.net30)}</td><td class="h-sub">${(r.spotOn || []).map(e => hEsc(names[e] || e)).join(', ') || 'check'}</td></tr>`; }).join('')}</table>
+      <p class="h-sub" style="margin-top:10px">With $1,000: $500 buys the coin, $500 is margin for a 1× short, so $500 earns the funding. Net = funding minus buying and selling both sides. Rates change every few hours — a high rate today can turn negative tomorrow.</p>`
+    : `<div class="h-sub">${a.fundingAt ? 'No funding rate above ' + a.settings.fundingMinApr + '% a year right now.' : 'Loading…'}</div>`;
+}
+
+// ── PDF reports ──
+let homeRpDays = 7;
+const HOME_REPORTS = [
+  ['full', 'file-text', 'Full report', 'Overview, results by strategy, signals, trades, copy radar and arbitrage — everything in one file.'],
+  ['signals', 'radio-tower', 'Signals', 'Every BUY signal, traded or not, and whether it hit the target or the stop first. Plus why the bot did (not) trade.'],
+  ['trades', 'history', 'Trades', 'Results by strategy and every closed trade with entry, exit, fees and why it closed.'],
+  ['copy', 'eye', 'Copy-trading radar', 'Followed wallets, their trades and the practice-copy results.'],
+  ['arbitrage', 'arrow-left-right', 'Arbitrage & funding', 'Price gaps with every fee itemised for each capital size, the best capital, and funding rates.'],
+];
+function homeRenderReports(){
+  H$('hm-rp-list').innerHTML = HOME_REPORTS.map(([k, ic, t, d]) => `<div style="background:var(--h-card2);border:1px solid var(--h-line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px">
+    <div style="font-weight:800;font-size:15px">${hIc(ic)} ${t}</div><div class="h-sub" style="flex:1">${d}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="h-btn primary" onclick="homeReport('${k}', this)">${hIc('download')} Download PDF</button><button class="h-btn" onclick="homeReportTg('${k}')" title="Send to your Telegram chat">${hIc('send')} Telegram</button></div></div>`).join('');
+}
+document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('#hm-rp-days button'); if(!b) return;
+  homeRpDays = +b.dataset.d; document.querySelectorAll('#hm-rp-days button').forEach(x => x.classList.toggle('on', x === b)); });
+async function homeReport(type, btn){
+  const old = btn ? btn.innerHTML : ''; if(btn){ btn.disabled = true; btn.textContent = 'Making the PDF…'; }
+  try {
+    const r = await fetch(SETTINGS.proxyUrl + '/report/pdf', { method:'POST', headers:{ 'Content-Type':'application/json', 'X-Bot-Secret':SETTINGS.botSecret }, body: JSON.stringify({ type, days: homeRpDays }) });
+    if(!r.ok){ const d = await r.json().catch(() => ({})); throw new Error(d.error || (r.status === 404 ? 'Your server is still updating — try again in a minute.' : 'HTTP ' + r.status)); }
+    const blob = await r.blob(), url = URL.createObjectURL(blob), a = document.createElement('a');
+    const name = (r.headers.get('Content-Disposition') || '').match(/filename="([^"]+)"/)?.[1] || `fuelbot-${type}.pdf`;
+    a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000);
+    homeToast('PDF downloaded');
+  } catch(e){ homeToast(e.message); }
+  finally { if(btn){ btn.disabled = false; btn.innerHTML = old; } }
+}
+async function homeReportTg(type){
+  try { const r = await apCall('/report/telegram', { type, days: homeRpDays }); homeToast(r.ok ? 'Sent to your Telegram chat' : 'Telegram is not linked'); }
+  catch(e){ homeToast(e.message); }
+}
+
 function homeShowPro(){ H$('home').classList.add('hidden'); H$('home-back').style.display='block'; try{ localStorage.setItem('fb_view','pro'); }catch(e){} proApUpdate(); }
 function homeShowHome(){ H$('home').classList.remove('hidden'); H$('home-back').style.display='none'; try{ localStorage.setItem('fb_view','home'); }catch(e){} homeRefresh(); }
 
@@ -7272,5 +7478,48 @@ function homeShowHome(){ H$('home').classList.remove('hidden'); H$('home-back').
 })();
 </script>
 
+<style>
+.fi{width:1.1em;height:1.1em;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.18em;display:inline-block;flex:none}
+.fd{display:inline-block;width:.62em;height:.62em;border-radius:50%;vertical-align:.04em;flex:none}
+</style>
+<!-- Icons: Lucide (lucide.dev), ISC license -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none"><symbol id="i-activity" viewBox="0 0 24 24"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2" /></symbol><symbol id="i-alarm-clock" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8" /><path d="M12 9v4l2 2" /><path d="M5 3 2 6" /><path d="m22 6-3-3" /><path d="M6.38 18.7 4 21" /><path d="M17.64 18.67 20 21" /></symbol><symbol id="i-arrow-down" viewBox="0 0 24 24"><path d="M12 5v14" /><path d="m19 12-7 7-7-7" /></symbol><symbol id="i-arrow-left-right" viewBox="0 0 24 24"><path d="M8 3 4 7l4 4" /><path d="M4 7h16" /><path d="m16 21 4-4-4-4" /><path d="M20 17H4" /></symbol><symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></symbol><symbol id="i-arrow-up" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7" /><path d="M12 19V5" /></symbol><symbol id="i-atom" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1" /><path d="M20.2 20.2c2.04-2.03.02-7.36-4.5-11.9-4.54-4.52-9.87-6.54-11.9-4.5-2.04 2.03-.02 7.36 4.5 11.9 4.54 4.52 9.87 6.54 11.9 4.5Z" /><path d="M15.7 15.7c4.52-4.54 6.54-9.87 4.5-11.9-2.03-2.04-7.36-.02-11.9 4.5-4.52 4.54-6.54 9.87-4.5 11.9 2.03 2.04 7.36.02 11.9-4.5Z" /></symbol><symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M4.929 4.929 19.07 19.071" /></symbol><symbol id="i-banknote" viewBox="0 0 24 24"><rect width="20" height="12" x="2" y="6" rx="2" /><circle cx="12" cy="12" r="2" /><path d="M6 12h.01M18 12h.01" /></symbol><symbol id="i-book-open" viewBox="0 0 24 24"><path d="M12 5v16" /><path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z" /></symbol><symbol id="i-bot" viewBox="0 0 24 24"><path d="M12 8V4H8" /><rect width="16" height="12" x="4" y="8" rx="2" /><path d="M2 14h2" /><path d="M20 14h2" /><path d="M15 13v2" /><path d="M9 13v2" /></symbol><symbol id="i-brain" viewBox="0 0 24 24"><path d="M12 18V5" /><path d="M15 13a4.17 4.17 0 01-3-4 4.17 4.17 0 01-3 4" /><path d="M17.707 6.294A3 3 0 1012 5a3 3 0 10-5.707 1.294" /><path d="M17.996 5.125a4 4 0 012.526 5.77" /><path d="M18 18a4 4 0 002-7.465" /><path d="M19.967 17.482a4 4 0 11-7.967.517 4 4 0 11-7.967-.517" /><path d="M6 18a4 4 0 01-2-7.465" /><path d="M6.004 5.125a4 4 0 00-2.526 5.77" /></symbol><symbol id="i-calendar" viewBox="0 0 24 24"><path d="M8 2v3" /><path d="M16 2v3" /><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18" /></symbol><symbol id="i-chart-column" viewBox="0 0 24 24"><path d="M3 3v16a2 2 0 0 0 2 2h16" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" /></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol><symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></symbol><symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></symbol><symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></symbol><symbol id="i-chevron-up" viewBox="0 0 24 24"><path d="m18 15-6-6-6 6" /></symbol><symbol id="i-circle-check-big" viewBox="0 0 24 24"><path d="M21.801 10A10 10 0 1 1 17 3.335" /><path d="m9 11 3 3L22 4" /></symbol><symbol id="i-circle-pause" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><line x1="10" x2="10" y1="15" y2="9" /><line x1="14" x2="14" y1="15" y2="9" /></symbol><symbol id="i-circle-stop" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><rect x="9" y="9" width="6" height="6" rx="1" /></symbol><symbol id="i-circle-x" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path d="m9 9 6 6" /></symbol><symbol id="i-clipboard-list" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1" ry="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><path d="M12 11h4" /><path d="M12 16h4" /><path d="M8 11h.01" /><path d="M8 16h.01" /></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></symbol><symbol id="i-coins" viewBox="0 0 24 24"><path d="M13.744 17.736a6 6 0 1 1-7.48-7.48" /><path d="M15 6h1v4" /><path d="m6.134 14.768.866-.5 2 3.464" /><circle cx="16" cy="8" r="6" /></symbol><symbol id="i-dog" viewBox="0 0 24 24"><path d="M11.25 16.25h1.5L12 17z" /><path d="M16 14v.5" /><path d="M4.42 11.247A13.152 13.152 0 0 0 4 14.556C4 18.728 7.582 21 12 21s8-2.272 8-6.444a11.702 11.702 0 0 0-.493-3.309" /><path d="M8 14v.5" /><path d="M8.5 8.5c-.384 1.05-1.083 2.028-2.344 2.5-1.931.722-3.576-.297-3.656-1-.113-.994 1.177-6.53 4-7 1.923-.321 3.651.845 3.651 2.235A7.497 7.497 0 0 1 14 5.277c0-1.39 1.844-2.598 3.767-2.277 2.823.47 4.113 6.006 4 7-.08.703-1.725 1.722-3.656 1-1.261-.472-1.855-1.45-2.239-2.5" /></symbol><symbol id="i-download" viewBox="0 0 24 24"><path d="M12 15V3" /><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="m7 10 5 5 5-5" /></symbol><symbol id="i-droplet" viewBox="0 0 24 24"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z" /></symbol><symbol id="i-external-link" viewBox="0 0 24 24"><path d="M15 3h6v6" /><path d="M10 14 21 3" /><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /></symbol><symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" /><circle cx="12" cy="12" r="3" /></symbol><symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49" /><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242" /><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143" /><path d="m2 2 20 20" /></symbol><symbol id="i-file-down" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" /><path d="M14 2v5a1 1 0 0 0 1 1h5" /><path d="M12 18v-6" /><path d="m9 15 3 3 3-3" /></symbol><symbol id="i-file-text" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" /><path d="M14 2v5a1 1 0 0 0 1 1h5" /><path d="M10 9H8" /><path d="M16 13H8" /><path d="M16 17H8" /></symbol><symbol id="i-fire-extinguisher" viewBox="0 0 24 24"><path d="M15 6.5V3a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v3.5" /><path d="M9 18h8" /><path d="M18 3h-3" /><path d="M11 3a6 6 0 0 0-6 6v11" /><path d="M5 13h4" /><path d="M17 10a4 4 0 0 0-8 0v10a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2Z" /></symbol><symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4" /></symbol><symbol id="i-flask-conical" viewBox="0 0 24 24"><path d="M14 2v6a2 2 0 0 0 .245.96l5.51 10.08A2 2 0 0 1 18 22H6a2 2 0 0 1-1.755-2.96l5.51-10.08A2 2 0 0 0 10 8V2" /><path d="M6.453 15h11.094" /><path d="M8.5 2h7" /></symbol><symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" /></symbol><symbol id="i-fuel" viewBox="0 0 24 24"><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 4 0v-6.998a2 2 0 0 0-.59-1.42L18 5" /><path d="M14 21V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v16" /><path d="M2 21h13" /><path d="M3 9h11" /></symbol><symbol id="i-gauge" viewBox="0 0 24 24"><path d="m12 14 4-4" /><path d="M3.34 19a10 10 0 1 1 17.32 0" /></symbol><symbol id="i-gem" viewBox="0 0 24 24"><path d="M10.5 3 8 9l4 13 4-13-2.5-6" /><path d="M17 3a2 2 0 0 1 1.6.8l3 4a2 2 0 0 1 .013 2.382l-7.99 10.986a2 2 0 0 1-3.247 0l-7.99-10.986A2 2 0 0 1 2.4 7.8l2.998-3.997A2 2 0 0 1 7 3z" /><path d="M2 9h20" /></symbol><symbol id="i-ghost" viewBox="0 0 24 24"><path d="M15 10v1" /><path d="M7.528 20.472a1.6 1.6 0 012.277 0l1.057 1.056a1.6 1.6 0 002.276 0l1.057-1.056a1.6 1.6 0 012.277 0l1.114 1.114a1.4 1.4 0 002.414-1V10a8 8 0 00-16 0v10.586a1.4 1.4 0 002.414 1z" /><path d="M9 10v1" /></symbol><symbol id="i-hand" viewBox="0 0 24 24"><path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2" /><path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2" /><path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8" /><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" /></symbol><symbol id="i-hexagon" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /></symbol><symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /><path d="M12 7v5l4 2" /></symbol><symbol id="i-hourglass" viewBox="0 0 24 24"><path d="M5 22h14" /><path d="M5 2h14" /><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" /><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" /></symbol><symbol id="i-house" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" /><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></symbol><symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></symbol><symbol id="i-key-round" viewBox="0 0 24 24"><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z" /><circle cx="16.5" cy="7.5" r=".5" fill="currentColor" /></symbol><symbol id="i-landmark" viewBox="0 0 24 24"><path d="M10 18v-7" /><path d="M11.119 2.205a2 2 0 0 1 1.762 0l7.84 3.846A.5.5 0 0 1 20.5 7h-17a.5.5 0 0 1-.22-.949z" /><path d="M14 18v-7" /><path d="M18 18v-7" /><path d="M3 22h18" /><path d="M6 18v-7" /></symbol><symbol id="i-layers" viewBox="0 0 24 24"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" /><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" /><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" /></symbol><symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></symbol><symbol id="i-lock-open" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 9.9-1" /></symbol><symbol id="i-microscope" viewBox="0 0 24 24"><path d="M6 18h8" /><path d="M3 22h18" /><path d="M14 22a7 7 0 1 0 0-14h-1" /><path d="M9 14h2" /><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z" /><path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3" /></symbol><symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401" /></symbol><symbol id="i-newspaper" viewBox="0 0 24 24"><path d="M15 18h-5" /><path d="M18 14h-8" /><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-4 0v-9a2 2 0 0 1 2-2h2" /><rect width="8" height="4" x="10" y="6" rx="1" /></symbol><symbol id="i-octagon-x" viewBox="0 0 24 24"><path d="m15 9-6 6" /><path d="M2.586 16.726A2 2 0 0 1 2 15.312V8.688a2 2 0 0 1 .586-1.414l4.688-4.688A2 2 0 0 1 8.688 2h6.624a2 2 0 0 1 1.414.586l4.688 4.688A2 2 0 0 1 22 8.688v6.624a2 2 0 0 1-.586 1.414l-4.688 4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586z" /><path d="m9 9 6 6" /></symbol><symbol id="i-package" viewBox="0 0 24 24"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" /><path d="M12 22V12" /><polyline points="3.29 7 12 12 20.71 7" /><path d="m7.5 4.27 9 5.15" /></symbol><symbol id="i-pause" viewBox="0 0 24 24"><rect x="14" y="3" width="5" height="18" rx="1" /><rect x="5" y="3" width="5" height="18" rx="1" /></symbol><symbol id="i-pencil" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /><path d="m15 5 4 4" /></symbol><symbol id="i-percent" viewBox="0 0 24 24"><line x1="19" x2="5" y1="5" y2="19" /><circle cx="6.5" cy="6.5" r="2.5" /><circle cx="17.5" cy="17.5" r="2.5" /></symbol><symbol id="i-play" viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z" /></symbol><symbol id="i-plug" viewBox="0 0 24 24"><path d="M12 22v-5" /><path d="M15 8V2" /><path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z" /><path d="M9 8V2" /></symbol><symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14" /><path d="M12 5v14" /></symbol><symbol id="i-radio-tower" viewBox="0 0 24 24"><path d="M4.9 16.1C1 12.2 1 5.8 4.9 1.9" /><path d="M7.8 4.7a6.14 6.14 0 0 0-.8 7.5" /><circle cx="12" cy="9" r="2" /><path d="M16.2 4.8c2 2 2.26 5.11.8 7.47" /><path d="M19.1 1.9a9.96 9.96 0 0 1 0 14.1" /><path d="M9.5 18h5" /><path d="m8 22 4-11 4 11" /></symbol><symbol id="i-refresh-cw" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></symbol><symbol id="i-rocket" viewBox="0 0 24 24"><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" /><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09" /><path d="M9 12a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.4 22.4 0 0 1-4 2z" /><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 .05 5 .05" /></symbol><symbol id="i-ruler" viewBox="0 0 24 24"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z" /><path d="m14.5 12.5 2-2" /><path d="m11.5 9.5 2-2" /><path d="m8.5 6.5 2-2" /><path d="m17.5 15.5 2-2" /></symbol><symbol id="i-save" viewBox="0 0 24 24"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" /><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" /><path d="M7 3v4a1 1 0 0 0 1 1h7" /></symbol><symbol id="i-scale" viewBox="0 0 24 24"><path d="M12 3v18" /><path d="m19 8 3 8a5 5 0 0 1-6 0zV7" /><path d="M3 7h1a17 17 0 0 0 8-2 17 17 0 0 0 8 2h1" /><path d="m5 8 3 8a5 5 0 0 1-6 0zV7" /><path d="M7 21h10" /></symbol><symbol id="i-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34" /><circle cx="11" cy="11" r="8" /></symbol><symbol id="i-send" viewBox="0 0 24 24"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" /><path d="m21.854 2.147-10.94 10.939" /></symbol><symbol id="i-settings" viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /><circle cx="12" cy="12" r="3" /></symbol><symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /></symbol><symbol id="i-sliders-horizontal" viewBox="0 0 24 24"><path d="M10 5H3" /><path d="M12 19H3" /><path d="M14 3v4" /><path d="M16 17v4" /><path d="M21 12h-9" /><path d="M21 19h-5" /><path d="M21 5h-7" /><path d="M8 10v4" /><path d="M8 12H3" /></symbol><symbol id="i-smartphone" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /><path d="M12 18h.01" /></symbol><symbol id="i-square" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" /></symbol><symbol id="i-star" viewBox="0 0 24 24"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z" /></symbol><symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" /></symbol><symbol id="i-sun-moon" viewBox="0 0 24 24"><path d="M12 2v2" /><path d="M14.837 16.385a6 6 0 1 1-7.223-7.222c.624-.147.97.66.715 1.248a4 4 0 0 0 5.26 5.259c.589-.255 1.396.09 1.248.715" /><path d="M16 12a4 4 0 0 0-4-4" /><path d="m19 5-1.256 1.256" /><path d="M20 12h2" /></symbol><symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></symbol><symbol id="i-trash-2" viewBox="0 0 24 24"><path d="M10 11v6" /><path d="M14 11v6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></symbol><symbol id="i-trending-down" viewBox="0 0 24 24"><path d="M16 17h6v-6" /><path d="m22 17-8.5-8.5-5 5L2 7" /></symbol><symbol id="i-trending-up" viewBox="0 0 24 24"><path d="M16 7h6v6" /><path d="m22 7-8.5 8.5-5-5L2 17" /></symbol><symbol id="i-triangle-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4" /><path d="M12 17h.01" /></symbol><symbol id="i-trophy" viewBox="0 0 24 24"><path d="M10 14.66V17a1 1 0 0 1-1 1 2 2 0 0 0-2 2v2" /><path d="M14 14.66V17a1 1 0 0 0 1 1 2 2 0 0 1 2 2v2" /><path d="M17.916 10H19.5A2.5 2.5 0 0 0 22 7.5V5a1 1 0 0 0-1-1h-3" /><path d="M4 22h16" /><path d="M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z" /><path d="M6.084 10H4.5A2.5 2.5 0 0 1 2 7.5V5a1 1 0 0 1 1-1h3" /></symbol><symbol id="i-undo-2" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5" /><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11" /></symbol><symbol id="i-wallet" viewBox="0 0 24 24"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" /><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" /></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></symbol><symbol id="i-zap" viewBox="0 0 24 24"><path d="M15.914 4a1.5 1.5 0 00-2.474-1.561l-9 9A1.5 1.5 0 005.5 14h4.002a.5.5 0 01.471.666L8.086 20a1.5 1.5 0 002.475 1.56l9-9A1.5 1.5 0 0018.5 10h-3.997a.5.5 0 01-.472-.667z" /></symbol></svg>
+<script>
+// Professional icons: every emoji in the page (also in content added later) is drawn as a Lucide line icon
+(function(){
+  const MAP = {"✔": "check", "✓": "check", "✅": "circle-check-big", "⚠": "triangle-alert", "⚙": "settings", "⚡": "zap", "🤖": "bot", "⭐": "star", "🎯": "target", "✕": "x", "✖": "x", "❌": "circle-x", "✗": "x", "📏": "ruler", "📊": "chart-column", "📈": "trending-up", "📉": "trending-down", "⛔": "octagon-x", "🛑": "circle-stop", "🔌": "plug", "💾": "save", "📋": "clipboard-list", "🛡": "shield", "🔍": "search", "🔎": "search", "🔑": "key-round", "📥": "download", "⏸": "pause", "⏳": "hourglass", "⌛": "hourglass", "🔒": "lock", "🔓": "lock-open", "👁": "eye", "💰": "banknote", "✎": "pencil", "✏": "pencil", "📝": "pencil", "🏛": "landmark", "🏦": "landmark", "📰": "newspaper", "⚖": "scale", "📱": "smartphone", "📄": "file-text", "☀": "sun", "🌙": "moon", "🌓": "sun-moon", "🚀": "rocket", "⏰": "alarm-clock", "📐": "ruler", "🔐": "lock", "🔥": "flame", "🔬": "microscope", "🗑": "trash-2", "🔄": "refresh-cw", "↺": "refresh-cw", "📅": "calendar", "📆": "calendar", "⚛": "atom", "🗂": "folder", "🧪": "flask-conical", "⬇": "download", "💵": "banknote", "📦": "package", "🧯": "fire-extinguisher", "🕓": "clock", "🚫": "ban", "🙈": "eye-off", "🧠": "brain", "📚": "book-open", "👉": "arrow-right", "↩": "undo-2", "🔺": "chevron-up", "🔼": "chevron-up", "🔽": "chevron-down", "↗": "trending-up", "↘": "trending-down", "📡": "radio-tower", "✋": "hand", "⛽": "fuel", "⬡": "hexagon", "💎": "gem", "🦄": "coins", "💧": "droplet", "👻": "ghost", "🐕": "dog", "🐸": "coins", "😱": "gauge", "😟": "gauge", "😐": "gauge", "🙂": "gauge", "🤑": "gauge", "▶": "play", "◀": "chevron-left", "🏠": "house", "🟦": "square"}, DOTS = {"🟢": "#22c55e", "🔴": "#ef4444", "🟡": "#eab308", "⚪": "#cbd5e1", "⬛": "#334155"};
+  const keys = Object.keys(MAP).concat(Object.keys(DOTS)).sort((a,b) => b.length - a.length).map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const RE = new RegExp('(' + keys.join('|') + ')\uFE0F?', 'gu');
+  const SKIP = { SCRIPT:1, STYLE:1, TEXTAREA:1, INPUT:1, TITLE:1, CODE:1, PRE:1, NOSCRIPT:1 };
+  const NS = 'http://www.w3.org/2000/svg';
+  function icon(ch){
+    if(DOTS[ch]){ const s = document.createElement('span'); s.className = 'fd'; s.style.background = DOTS[ch]; return s; }
+    const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('class', 'fi'); svg.setAttribute('aria-hidden', 'true');
+    const u = document.createElementNS(NS, 'use'); u.setAttribute('href', '#i-' + MAP[ch]); svg.appendChild(u); return svg;
+  }
+  function fix(t){
+    const p = t.parentNode; if(!p || p.nodeType !== 1 || SKIP[p.nodeName] || p.closest('svg')) return;
+    const v = t.nodeValue; RE.lastIndex = 0; if(!RE.test(v)) return;
+    if(p.nodeName === 'OPTION' || p.nodeName === 'SELECT'){ t.nodeValue = v.replace(RE, '').replace(/^\s+/, ''); return; }   // a list item cannot show a picture
+    const f = document.createDocumentFragment(); let last = 0; RE.lastIndex = 0; let m;
+    while((m = RE.exec(v))){ if(m.index > last) f.appendChild(document.createTextNode(v.slice(last, m.index))); f.appendChild(icon(m[1])); last = m.index + m[0].length; }
+    if(last < v.length) f.appendChild(document.createTextNode(v.slice(last)));
+    p.replaceChild(f, t);
+  }
+  function scan(n){
+    if(n.nodeType === 3) return fix(n);
+    if(n.nodeType !== 1 || SKIP[n.nodeName]) return;
+    const w = document.createTreeWalker(n, NodeFilter.SHOW_TEXT), list = []; let t;
+    while((t = w.nextNode())) list.push(t);
+    list.forEach(fix);
+  }
+  function start(){
+    scan(document.body);
+    new MutationObserver(ms => { for(const m of ms){ if(m.type === 'characterData') fix(m.target); else m.addedNodes.forEach(scan); } })
+      .observe(document.body, { childList:true, subtree:true, characterData:true });
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+</script>
 </body>
 </html>
