@@ -6754,13 +6754,37 @@ function toggleStargatePanel() {
 
       <div class="h-cols">
         <div class="h-card">
-          <div class="h-head"><div><h3 id="hm-feed-title">What the AI is thinking</h3><p class="h-sub">Every decision, in plain words — newest first</p></div></div>
+          <div class="h-head"><div><h3 id="hm-feed-title">What the AI is thinking</h3><p class="h-sub" id="hm-feed-sub">Every decision, in plain words — newest first</p></div></div>
+          <div class="row" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+            <button class="h-btn" onclick="homeFeedDay(-1)" title="Previous day">◀</button>
+            <input type="date" id="hm-feed-date" onchange="homeFeedPick(this.value)" style="font:inherit;padding:8px 10px;border-radius:10px;border:1px solid var(--h-line);background:var(--h-card2);color:var(--h-text)"/>
+            <button class="h-btn" onclick="homeFeedDay(1)" title="Next day">▶</button>
+            <button class="h-btn" onclick="homeFeedPick('')">Today</button>
+            <select id="hm-feed-coin" onchange="homeLoadFeed()" style="font:inherit;padding:8px 10px;border-radius:10px;border:1px solid var(--h-line);background:var(--h-card2);color:var(--h-text)"><option value="">All coins</option></select>
+            <label class="h-sub" style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" id="hm-feed-buy" onchange="homeLoadFeed()"/> BUY signals only</label>
+          </div>
           <div class="h-feed" id="hm-feed"></div>
         </div>
         <div class="h-card">
           <div class="h-head"><div><h3>Trade history</h3><p class="h-sub">Closed trades and how they ended</p></div></div>
           <div id="hm-hist"></div>
         </div>
+      </div>
+
+      <div class="h-card" style="margin-bottom:16px">
+        <div class="h-head"><div><h3>📡 Signal results</h3><p class="h-sub">Every BUY signal — traded or not — and what the price did next: target 🎯 or stop 🛑 first, and how long it took</p></div>
+          <div class="h-seg"><button id="hm-sg-7" class="on" onclick="homeSigDays(7)">7 days</button><button id="hm-sg-30" onclick="homeSigDays(30)">30 days</button></div></div>
+        <div id="hm-sg-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px"></div>
+        <div id="hm-sg-list" style="max-height:480px;overflow:auto"></div>
+      </div>
+
+      <div class="h-card" style="margin-bottom:16px">
+        <div class="h-head"><div><h3>🔎 Why did it (not) trade?</h3><p class="h-sub">Every decision of the last 7 days, grouped — and how many checks it made each day (proof it runs 24/7)</p></div></div>
+        <div class="h-cols" style="margin:0">
+          <div><div class="h-sub" style="font-weight:600;margin-bottom:8px">Checks per day</div><div id="hm-ins-days"></div></div>
+          <div><div class="h-sub" style="font-weight:600;margin-bottom:8px">Top reasons</div><div id="hm-ins-why"></div></div>
+        </div>
+        <div class="h-sub" id="hm-ins-ai" style="margin-top:12px"></div>
       </div>
     </div>
   </div>
@@ -6873,6 +6897,8 @@ async function homeRefresh(){
     H$('hm-connect').style.display='none'; H$('hm-main').style.display='';
     homeRender();
     try { homePerf = await apCall('/autopilot/performance', { mode: homePerfModeSel || AP.settings.mode }); homeRenderPerf(); } catch(e){ /* older server */ }
+    if(!homeFeedDate) homeLoadFeed();
+    homeLoadSlow(false);
   } catch(e){
     if(/Unauthorized|401|Bot Secret/.test(e.message)) homeShowConnect('Wrong key — try again.');
     else if(/Too many/.test(e.message)) homeShowConnect('Too many wrong tries — wait 10 minutes.');
@@ -7005,8 +7031,8 @@ function homeRender(){
       <div style="margin-top:10px;text-align:right"><button class="h-btn danger" onclick="homeClose('${hEsc(p.id)}')">Close now</button></div></div>`;
   }).join('') : '<div class="h-empty">No open trades. The bot buys only when the market and the AI agree.</div>';
 
-  // feed
-  H$('hm-feed').innerHTML = AP.decisions.length ? AP.decisions.slice(0,30).map(d=>{
+  // feed (day view is loaded separately; this is only the very first paint)
+  if(!homeFeedLoaded) H$('hm-feed').innerHTML = AP.decisions.length ? AP.decisions.slice(0,30).map(d=>{
     const a = d.action, ic = a==='BUY'?['ic-buy','↑']:a==='SELL'?['ic-sell','↓']:a==='ERROR'?['ic-err','!']:['ic-wait','…'];
     const label = a==='BUY'?'Buy signal':a==='SELL'?'Sell signal':a==='ERROR'?'Problem':'Wait';
     const conf = d.confidence!=null && a!=='ERROR' ? `<span class="tm">${d.setup==='classic' ? 'score '+(d.confidence/10).toFixed(1)+'/10' : hEsc(d.confidence)+'% sure'} <span class="h-meter"><i style="width:${Math.max(0,Math.min(100,+d.confidence||0))}%"></i></span></span>` : '';
@@ -7090,6 +7116,74 @@ async function homeDownload(kind){
     setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
     homeToast(`Downloaded ${r.rows.length} ${kind}`);
   } catch(e){ homeToast('⚠ '+e.message); }
+}
+
+// ── decision day view, signal results, insights ──
+let homeFeedLoaded = false, homeFeedDate = '', homeSigDaysSel = 7, homeSlowAt = 0;
+const homeDayStr = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+function homeSignalBadge(sg){
+  if(!sg) return '';
+  const pct = v => `${v>=0?'+':''}${(+v).toFixed(2)}%`;
+  const dur = h => h < 1 ? `${Math.round(h*60)} min` : h < 48 ? `${h.toFixed(1)} h` : `${(h/24).toFixed(1)} days`;
+  const b = sg.status==='target' ? ['b-up',`🎯 Hit target after ${dur(sg.hours)} (${pct(sg.resultPct)})`]
+          : sg.status==='stop'   ? ['b-down',`🛑 Hit stop after ${dur(sg.hours)} (${pct(sg.resultPct)})`]
+          : sg.status==='expired'? ['b-dim',`⌛ Neither in ${dur(sg.hours)} (${pct(sg.resultPct)})`]
+          : ['b-side',`⏳ Still open${sg.nowPct!=null ? ` · now ${pct(sg.nowPct)}` : ''}`];
+  return `<span class="h-badge ${b[0]}" style="text-transform:none;font-size:12px">${b[1]}</span>`;
+}
+function homeDecisionItem(d){
+  const a = d.action, ic = a==='BUY'?['ic-buy','↑']:a==='SELL'?['ic-sell','↓']:a==='ERROR'?['ic-err','!']:['ic-wait','…'];
+  const label = a==='BUY'?'Buy signal':a==='SELL'?'Sell signal':a==='ERROR'?'Problem':'Wait';
+  const conf = d.confidence!=null && a!=='ERROR' ? `<span class="tm">${d.setup==='classic' ? 'score '+(d.confidence/10).toFixed(1)+'/10' : hEsc(d.confidence)+'% sure'} <span class="h-meter"><i style="width:${Math.max(0,Math.min(100,+d.confidence||0))}%"></i></span></span>` : '';
+  const time = new Date(d.at).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+  const traded = a==='BUY' ? (/^opened/.test(d.outcome||'') ? '<span class="h-badge b-up" style="text-transform:none;font-size:12px">✅ Traded</span>' : '<span class="h-badge b-dim" style="text-transform:none;font-size:12px">Not traded</span>') : '';
+  return `<div class="h-item"><div class="h-ic ${ic[0]}">${ic[1]}</div><div>
+    <div class="t1">${hEsc(hCoin(d.symbol))} · ${label} ${conf}<span class="tm" style="margin-left:auto">${time}</span></div>
+    <div class="t2">${hEsc(homeOutcome(d.outcome, d))}</div>
+    ${a==='BUY' ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${traded}${homeSignalBadge(d.signal)}${d.stop_loss ? `<span class="h-sub" style="font-size:12px">@ ${hPrice(d.price)} → 🎯 ${hPrice(d.signal?.tp ?? d.take_profit)} / 🛑 ${hPrice(d.signal?.sl ?? d.stop_loss)}</span>` : ''}</div>` : ''}
+    ${d.reason && d.setup!=='classic' ? `<div class="t3">“${hEsc(d.reason)}”</div>` : ''}</div></div>`;
+}
+function homeFeedPick(v){ homeFeedDate = v || ''; homeLoadFeed(); }
+function homeFeedDay(n){ const d = homeFeedDate ? new Date(homeFeedDate+'T00:00') : new Date(); d.setDate(d.getDate()+n); const t = homeDayStr(new Date());
+  homeFeedDate = homeDayStr(d) >= t ? '' : homeDayStr(d); homeLoadFeed(); }
+async function homeLoadFeed(){
+  if(!AP) return;
+  const sel = H$('hm-feed-coin'), cur = sel.value;
+  sel.innerHTML = '<option value="">All coins</option>' + (AP.settings.symbols||[]).map(x=>`<option value="${hEsc(x)}">${hEsc(hCoin(x))}</option>`).join(''); sel.value = cur;
+  const day = homeFeedDate || homeDayStr(new Date());
+  H$('hm-feed-date').value = day;
+  const from = new Date(day+'T00:00').getTime(), to = from + 864e5;
+  try {
+    const r = await apCall('/autopilot/decisions', { from, to, symbol: sel.value || undefined, onlyBuy: H$('hm-feed-buy').checked });
+    homeFeedLoaded = true;
+    const isToday = !homeFeedDate;
+    H$('hm-feed-sub').textContent = `${isToday ? 'Today' : new Date(from).toLocaleDateString([], { weekday:'long', day:'numeric', month:'short' })} · ${r.count} decision${r.count===1?'':'s'}${AP.settings.strategy==='classic' ? ' (Classic logs only changes)' : ''} — newest first`;
+    H$('hm-feed').innerHTML = r.rows.length ? r.rows.map(homeDecisionItem).join('') : `<div class="h-empty">No decisions${H$('hm-feed-buy').checked ? ' with a BUY signal' : ''} on this day.</div>`;
+  } catch(e){ /* older server: keep the status feed */ }
+}
+function homeSigDays(n){ homeSigDaysSel = n; H$('hm-sg-7').className = n===7?'on':''; H$('hm-sg-30').className = n===30?'on':''; homeLoadSlow(true); }
+async function homeLoadSlow(force){
+  if(!AP || (!force && Date.now() - homeSlowAt < 60e3)) return;
+  homeSlowAt = Date.now();
+  try {
+    const r = await apCall('/autopilot/signals', { days: homeSigDaysSel }), st = r.stats;
+    const box = (l, v, c='') => `<div style="background:var(--h-card2);border-radius:12px;padding:10px"><div class="h-sub" style="font-size:12px">${l}</div><div style="font-weight:800;font-size:17px;white-space:nowrap" class="${c}">${v}</div></div>`;
+    H$('hm-sg-stats').innerHTML = box('BUY signals', st.signals) + box('Traded', st.executed) + box('🎯 Hit target', st.target, 'pos') + box('🛑 Hit stop', st.stop, st.stop?'neg':'')
+      + box('⌛ Neither', st.expired) + box('Hit rate', st.hitRate!=null ? st.hitRate+'%' : '—') + box('Avg time to target', st.avgHoursToTarget!=null ? st.avgHoursToTarget+' h' : '—')
+      + box(`If all taken ($${AP.settings.tradeSizeUSDT} each)`, hMoney(st.ifAllTaken), hCls(st.ifAllTaken));
+    H$('hm-sg-list').innerHTML = r.signals.length ? `<table class="h-hist">${r.signals.map(x=>`<tr>
+        <td><b>${hEsc(hCoin(x.symbol))}</b> <span class="h-sub">${x.strategy==='classic'?'📏':'🤖'}</span><div class="h-sub">${new Date(x.at).toLocaleString([], { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })}</div></td>
+        <td>${hPrice(x.entry)} → 🎯 ${hPrice(x.tp)} / 🛑 ${hPrice(x.sl)}<div class="h-sub">${x.strategy==='classic' ? 'score '+((+x.confidence||0)/10).toFixed(1)+'/10' : (x.confidence ?? '?')+'% sure'} · ${x.executed ? '✅ traded' : 'not traded'}</div></td>
+        <td style="text-align:right">${homeSignalBadge(x)}</td></tr>`).join('')}</table>`
+      : `<div class="h-empty">No BUY signals in the last ${homeSigDaysSel} days. Every BUY the AI or the Classic rules give — traded or not — will be listed here with its result.</div>`;
+  } catch(e){}
+  try {
+    const x = await apCall('/autopilot/insights', { days: 7 });
+    const max = Math.max(1, ...Object.values(x.byDay||{}));
+    H$('hm-ins-days').innerHTML = Object.entries(x.byDay||{}).map(([d,n]) => `<div style="display:grid;grid-template-columns:60px 1fr 40px;gap:8px;align-items:center;font-size:13px;margin-bottom:5px"><span class="h-sub">${d.slice(5)}</span><div style="height:9px;border-radius:5px;background:var(--h-card2);overflow:hidden"><i style="display:block;height:100%;width:${Math.round(n/max*100)}%;background:var(--h-blue)"></i></div><b>${n}</b></div>`).join('') || '<div class="h-empty">No checks recorded yet.</div>';
+    H$('hm-ins-why').innerHTML = (x.top||[]).slice(0,8).map(([k,n]) => `<div style="display:grid;grid-template-columns:1fr 48px;gap:8px;font-size:13px;margin-bottom:5px"><span>${hEsc(k)}</span><b style="text-align:right">${Math.round(n/x.decisions*100)}%</b></div>`).join('');
+    H$('hm-ins-ai').textContent = `AI said BUY ${x.actions.BUY} · SELL ${x.actions.SELL} · WAIT ${x.actions.HOLD} times in 7 days${x.recentAi?.length ? ` · latest: “${x.recentAi.at(-1).reason}”` : ''}`;
+  } catch(e){}
 }
 
 // ── actions ──
